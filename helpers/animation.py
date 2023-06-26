@@ -343,5 +343,9 @@ def parse_key_frames(string, prompt_parser=None):
         else:
             frames[frame] = param
     if frames == {} and len(string) != 0:
+        # from pprint import pprint
+        # pprint(string)
+        # pprint(frames)
         raise RuntimeError('Key Frame string not correctly formatted')
+
     return frames

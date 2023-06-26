@@ -1,3 +1,6 @@
+#!/bin/env python
+#!/bin/env python
+
 # %%
 # !! {"metadata":{
 # !!   "id": "ByGXyiHZWM_q"
@@ -106,7 +109,7 @@ from helpers.aesthetics import load_aesthetics_model
 #@markdown **Path Setup**
 
 def Root():
-    models_path = "models" #@param {type:"string"}
+    models_path = "models/Stable-diffusion" #@param {type:"string"}
     configs_path = "configs" #@param {type:"string"}
     output_path = "outputs" #@param {type:"string"}
     mount_google_drive = True #@param {type:"boolean"}
@@ -235,19 +238,7 @@ prompts = [
 ]
 
 animation_prompts = {
-0:"army of black ants dancing with mushrooms on the grass with a single glass pyramid in the background, psychedelic, dali",
-10:"large black ants dancing with mushrooms on the grass with a glass pyramid in the background with palm trees, psychedelic, dali",
-20:"large colorful ants dancing with mushrooms on the grass with pyramids in the background in a jungle, psychedelic, dali",
-30:"large colorful ants dancing with mushrooms in a jungle, psychedelic, dali",
-40:":ants and mushrooms dancing together in a jungle, psychedelic, dali",
-50:"ant climbing up a pyramid, psychedelic in a jungle with birds, dali",
-60:"pyramid in shape of mushroom, psychedelic in a jungle with animals, dali",
-70:"mushroom in shape of pyramid, psychedelic in a jungle with monkeys, dali",
-80:"mushrooms inside a pyramid, psychedelic in a jungle with naked humans, dali",
-90:"pyramids inside a mushroom, psychedelic in a jungle with aliens, dali",
-
-
-    # 0: "a beautiful apple, trending on Artstation",
+    0: "a river and an apple tree in the sahara dessert",
     # 20: "a beautiful banana, trending on Artstation",
     # 30: "a beautiful coconut, trending on Artstation",
     # 40: "a beautiful durian, trending on Artstation",

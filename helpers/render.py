@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image, ImageChops, ImageOps, ImageEnhance
 import pathlib
 import torchvision.transforms as T
+import os
 
 from .generate import generate, add_noise
 from .prompt import sanitize
@@ -49,6 +50,13 @@ def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output):
         cv2.imwrite(os.path.join(outdir, filename).replace(".png", ".exr"), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     else:
         write_png(os.path.join(outdir, filename), image)
+
+    #! JWFIX  added post processor 2>&1 >
+    # fn = os.path.join(outdir, filename)
+    # title = os.environ["TITLE"]
+    # cmd = f"convert {fn}  -background Khaki -pointsize 20 label:'[{title}]' -gravity Center -append {fn} 2>&1 >> /tmp/log "
+    # print(">>>>",cmd)
+    # os.system(cmd)
 
 def next_seed(args):
     if args.seed_behavior == 'iter':
@@ -257,6 +265,7 @@ def render_animation(args, anim_args, animation_prompts, root):
     args.n_samples = 1
     frame_idx = start_frame
     while frame_idx < anim_args.max_frames:
+        # os.system("clear")
         print(f"Rendering animation frame {frame_idx} of {anim_args.max_frames}")
         noise = keys.noise_schedule_series[frame_idx]
         strength = keys.strength_schedule_series[frame_idx]

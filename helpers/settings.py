@@ -1,5 +1,6 @@
 import os
 import json
+from pprint import pprint
 
 def load_args(args_dict, anim_args_dict, settings_file, custom_settings_file, verbose=True):
     default_settings_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'settings'))  
@@ -30,5 +31,5 @@ def load_args(args_dict, anim_args_dict, settings_file, custom_settings_file, ve
                     if verbose:
                         print(f"key {k} doesn't exist in the custom settings data! using the default value of {anim_args_dict[k]}")
             if verbose:
-                print(args_dict)
-                print(anim_args_dict)
+                pprint(args_dict)
+                pprint(anim_args_dict)
