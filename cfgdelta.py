@@ -67,7 +67,7 @@ for opt, arg in opts:
                 print(f"Missing: {orgdir}/{orgcfgfile} check the path")
                 exit()
         else:
-            os.path.isdir(arg)
+            # if os.path.isdir(arg):
             orgdir = arg
             orgcfgfile = False
             print("You entered directory only")

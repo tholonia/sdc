@@ -8,7 +8,7 @@ import genlib as g
 
 # ^ define selection arrays
 
-inOrder = True
+# inOrder = True
 
 # all = fish
 # all = biology
@@ -50,6 +50,7 @@ def rn(a, idx):
 
 
 def r(a, **kwargs):
+    global inOrder
     try:
         lastr = kwargs['lastr']
     except:
@@ -59,7 +60,7 @@ def r(a, **kwargs):
     except:
         idx = False
 
-    if inOrder:
+    if inOrder == 1:
         # return rn(a,idx)
         thisIdx = idx % len(a)
         rv = a[thisIdx]
@@ -67,7 +68,9 @@ def r(a, **kwargs):
         return rv
     else:
         rv = random.choice(a)
+        # errprint(f">>> {rv} : {lastr}")
         if rv == lastr:
+            # errprint(f"\t research")
             rv = r(a, lastr=lastr)
         return rv
 
@@ -78,13 +81,13 @@ def showhelp():
     -h, --help          show help
     
     -c, --count         number of unique objects/pairs
-    -m  --mult          frames per entry
+    -m,  --mult          frames per entry
     -s, --steps         pair transformations
     
-    -t  --type          type pof set ("micro", "bio", "animalsl")
+    -t,  --type          type pof set ("micro", "bio", "animalsl")
     -S, --show          list of keys to show, ex. "key,key,key..."
-    -X --exclude       list of keys to exclude, ex. "key,key,key..."
-    
+    -X, --exclude       list of keys to exclude, ex. "key,key,key..."
+    -o, --ordered       sequential (def random)    
     Varios 'types' are:
         "cells":    [cells]                      different cell-like things
         "bio":      [biology]
@@ -96,6 +99,7 @@ def showhelp():
     
 '''
     print(rs)
+    exit()
 
 
 # [                               MAIN                                       ]
@@ -124,12 +128,13 @@ lastall0 = False
 lastall1 = False
 lastplaces = False
 lastbg = False
+inOrder = 0
 
 commandline = ' '.join(sys.argv)
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hc:m:t:f:s:X:S:", [
+    opts, args = getopt.getopt(argv, "hc:m:t:f:s:X:S:o", [
         "help",
         "count=",
         "mult=",
@@ -138,6 +143,7 @@ try:
         "show=",
         "exclude=",
         "steps=",
+        "ordered",
     ])
 except Exception as e:
     print(str(e))
@@ -146,6 +152,8 @@ for opt, arg in opts:
         showhelp()
     if opt in ("-c", "--count"):
         count = int(arg)
+    if opt in ("-o", "--ordered"):
+        inOrder = 1
     if opt in ("-m", "--mult"):
         mult = int(arg)
         sample_offset = round(mult / 3)
@@ -175,7 +183,7 @@ for opt, arg in opts:
 uniall = []
 alters1 = []
 alters2 = []
-
+nl = []
 if settype == "cells":arrays = [g.cells]
 if settype == "bio":arrays = [g.biology]
 if settype == "animals":arrays = [g.snakes,g.fish,g.birds,g.animals]
@@ -184,19 +192,29 @@ if settype == "insects":arrays = [g.insects]
 if settype == "swamp":arrays = [g.insects,g.snakes,g.fish]
 if settype == "test":arrays = [g.test,g.test[::-1]]
 if settype == "ordered1":arrays = [g.ordered1+g.ordered1]
+if settype == "birds":arrays = [g.birds]
+if settype == "fish":arrays = [g.fish]
+if settype == "flowers":arrays = [g.flowers]
+if settype == "dna":arrays = [g.dna]
 
-if not inOrder:
+if inOrder == 0:
     random.shuffle(arrays) #^ randomize the elements
-for a in arrays:
-    if not inOrder:
-        nl = random.sample(a, 10) #^ get just the first 10 (that means every array in genlib must have at least 10 items)
-    else:
-        nl = a[:14]
-    for i in nl:
-        uniall.append(i)
+    for a in arrays:
+        nl=nl+a
+        random.shuffle(a)
+        # nl = random.sample(a, 10) #^ get just the first 10 (that means every array in genlib must have at least 10 items)
+else:
+    for a in arrays:
+        nl = a[:14] #^ get just the first 14 as there will never be a count > 14
 
+nl = nl[:14]
+nl.reverse()
+for i in nl:
+    uniall.append(i)
 
-# errprint(f"UNIALL: {uniall}")
+uniall.reverse()
+
+errprint(f"UNIALL-1: {uniall}")
 
 
 # ^ load original template into JSON array
@@ -220,16 +238,19 @@ pairs = []
 
 newall0 = r(uniall, lastr=lastall0, idx=0)
 uniall = rot_left(uniall,1)  #^ offset arrays so there are no dups in the pairs
-newall1 = r(uniall, lastr=lastall1, idx=0)
+newall1 = r(uniall, lastr=newall0, idx=0)
+
 
 # errprint(f"{newall0} -----------> {newall1}")
 
 for i in range(1, count + 1):
     pairs.append(f"{newall1}:{newall0}")
-    newall0 = r(uniall, lastr=lastall0, idx=0)
-    uniall = uniall = rot_left(uniall,1)  # ^ offset arrays so there are no dups in the pairs
-    newall1 = r(uniall, lastr=lastall1, idx=0)
-    # errprint(f"{newall0} -> {newall1}")
+    newall0 = newall1
+    # newall0 = r(uniall, lastr=lastall0, idx=0)
+    uniall = rot_left(uniall,1)
+    newall1 = r(uniall, lastr=newall1, idx=False)
+    lastall0 = newall0
+    lastall1 = newall1
 
 prelist = []
 for i in range(count):
@@ -293,11 +314,18 @@ aorgUp('sampler_schedule', line)
 ttime = (count * mult * 5) + (count * 5)  # ^ time estimation
 errprint(f"TOTAL RUN TIME: {ttime / 60}")
 
+
 #- settings overrides
 aorgUp('commandline', commandline)
 max_frames = len(prelist) * mult
 aorgUp("max_frames", max_frames )
-errprint(f"max_frames: {max_frames}")
+errprint(f"max_frames: {max_frames}, x20: {max_frames * 20}")
+max_ix_frames = (max_frames * 20) - 20
+errprint(f"max_ix_frames (ix=20): {max_ix_frames}")
+
+
+
+
 # aorg["translation_x"] = "0: (0)"
 # aorg["seed"] = -1
 # aorg["batch_name"] = "batch3"
@@ -305,6 +333,9 @@ errprint(f"max_frames: {max_frames}")
 # aorg["fps"]=60
 # aorg["animation_prompts_positive"] = ""
 # aorg["animation_prompts_negative"] = "nsfw, nude, human, man, woman, boy, girl, hands, face",
+
+# errprint(f"Total Frames: {max_frames}   x20Ix: {max_frames * 20}")
+
 
 # ^ rotation 1
 # rot1 = False

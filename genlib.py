@@ -63,7 +63,7 @@ animals=[
     "reindeer",
     "pony",
     "aardvark",
-    "dromedary",
+    "camel",
     "elk",
     "parakeet",
     "canary",
@@ -748,10 +748,12 @@ fish=[
 #     "Snowball bush"
 # ]
 flowers=[
-    "Oleander flower",
+    "Red Rose flower",
+    "White Orchid flower",
+    "Yellow Chrysanthemum flower",
+    "Purple Oleander flower",
     "Narcissus flower",
     "Geranium flower",
-    "Rose flower",
     "Lobelia flower",
     "Lavender flower",
     "Anemone flower",
@@ -765,7 +767,6 @@ flowers=[
     "Peony flower",
     "Lupine flower",
     "Tulip flower",
-    "Chrysanthemum flower",
     "Pansy flower",
     "Yarrow flower",
     "Salvia flower",
@@ -1099,7 +1100,7 @@ insects=[
     "ant"
 ]
 biology = [
-    "atom",
+    "hydrogen atom",
     "molecule",
     "influenze virus",
     "HIV virus",
@@ -1139,22 +1140,22 @@ biology = [
 ]
 
 test = [
-    "butterfly",
-    "ant",
-    "sunflower",
-    "butterfly",
-    "ant",
-    "sunflower",
-    "butterfly",
-    "ant",
-    "sunflower",
-    "butterfly",
-    "ant",
-    "sunflower",
+    "cat",
+    "dog",
+    "rabbit",
+    "elephant",
+    "parrot",
+    "fish",
+    "tucan",
+    "kangaroo",
+    "tiger",
+    "polar bear",
+    "panther",
+    "ferret",
 ]
 
 ordered1 = [
-    "atom",
+    "hydrogen atom",
     "molecule",
     "DNA cell",
     "protazoa",
@@ -1168,7 +1169,24 @@ ordered1 = [
     "solar system",
     "universe"
 ]
-
+dna = [
+    "DNA",
+    "double helix",
+    "RNA",
+    "genetics",
+    "DNA",
+    "double helix",
+    "RNA",
+    "genetics",
+    "DNA",
+    "double helix",
+    "RNA",
+    "genetics",
+    "DNA",
+    "double helix",
+    "RNA",
+    "genetics",
+]
 cells = [
     "human cell",
     "virus"

@@ -56,8 +56,8 @@ def modify(filepath,filename,label,fontsize):
     if filepath == "":
         filepath = "."
 
-    cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(h-text_h) -codec:a copy /tmp/outlabel.mp4"
-    # cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(text_h) -codec:a copy /tmp/outlabel.mp4"
+    # cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(h-text_h) -codec:a copy /tmp/outlabel.mp4"
+    cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(text_h) -codec:a copy /tmp/outlabel.mp4"
     print(cmd)
     # exit()
     prun(cmd)
