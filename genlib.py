@@ -1204,24 +1204,23 @@ cells = [
 models = [
 #^ center stable
     "deliberate_v2.safetensors [9aba26abdf]",
-    "dreamlike-photoreal-2.0.ckpt [fc52756a74]",
-    "dreamshaper_5BakedVae.safetensors [a60cfaa90d]",
-    "Protogen_V2.2.ckpt [bb725eaf2e]",
-
-
-
+    "DUP_deliberate_v2.safetensors [9aba26abdf]",
+    # "dreamlike-photoreal-2.0.ckpt [fc52756a74]",
+    # "dreamshaper_5BakedVae.safetensors [a60cfaa90d]",
+    # "Protogen_V2.2.ckpt [bb725eaf2e]",
+    #
     # "HassanBlend1.4_Safe.safetensors [b08fdba169]",
     # "f222.ckpt [9e2c6ceff3]",
     # "meinamix_meinaV9.safetensors [eac6c08a19]",
     # "sd-v1-4.ckpt [fe4efff1e1]",
     # "v1-5-pruned-emaonly.safetensors [6ce0161689]",
-
+    #
     # "modelshoot-1.0.safetensors [80dc271195]",
     # "openjourney-v4.ckpt [02e37aad9f]",
     # "chilloutmix_NiPrunedFp32Fix.safetensors [fc2511737a]",
     # "elldrethsRetroMix_v10.safetensors [57285e7bd5]",
-
-    # creates girls :/
+    #
+    # # creates girls :/
     # "ghostmix_v20Bakedvae.safetensors [e3edb8a26f]",
     # "anythingV3_fp16.ckpt [812cd9f9d9]",
     # "realisticVisionV20_v20.safetensors [c0d1994c73]",
@@ -1231,24 +1230,25 @@ models = [
 sampler = [
     "Euler a",
     "Euler",
-    # "DPM2 a",
-    # "DPM++ 2S a",
-    # "DPM++ 2M",
-    # "DPM++ SDE",
-#lots of BG noise
-    # "DPM fast",
-    # "DPM adaptive",
-    # "LMS Karras",
-    # "DPM2 Karras",
-    # "DPM++ 2S a Karras",
-    # "DPM++ 2M Karras",
 
-    # "DPM++ SDE Karras",
-    # "DDIM",
-    # "LMS",
-    # "DPM2",
-    # "Heun",
-    # "DPM2 a Karras",
+
+    "DPM2 a",
+    "DPM++ 2S a",
+    "DPM++ 2M",
+    "DPM++ SDE",
+#lots of BG noise
+    "DPM fast",
+    "DPM adaptive",
+    "LMS Karras",
+    "DPM2 Karras",
+    "DPM++ 2S a Karras",
+    "DPM++ 2M Karras",
+
+    "DPM++ SDE Karras",
+    "LMS",
+    "DPM2",
+    "Heun",
+    "DPM2 a Karras",
 ]
 
 #-----------------------------------------------------------------

@@ -15,7 +15,15 @@ import codecs
 import base64
 from base64 import b64encode, b64decode
 import traceback
+import re
 init()
+
+def getId(filename):
+    fnum = []
+    #^ get any 14 char string pefore a perios
+    fnum = re.findall("[\_\-\.]*([\d]{14})[\_\-\.]*",filename,re.DOTALL)
+    id = fnum[0]
+    return id
 
 def errprint(str):
     print(str, file=sys.stderr)
@@ -69,7 +77,7 @@ for opt, arg in opts:
     if opt in ("-a", "--add"):
         settings_file = arg
         if not os.path.exists(settings_file):
-            errprint(f"Oops... no setting file exists. Aborting")
+            errprint(f"Oops... no setting file named {settings_file} exists. Aborting")
             exit()
     if opt in ("-A", "--auto"):
         auto = True
@@ -91,10 +99,11 @@ for opt, arg in opts:
             exit()
 
 if auto:
-    id = video.split(".")[0]
+    # id = video.split(".")[0]
+    id = getId(video)
     settings_file = f"{dir}/{id}_settings.txt"
     if not os.path.exists(settings_file):
-        errprint(f"Oops... no setting file exists. Metadata untouched.")
+        errprint(f"Oops... no setting file named {settings_file} exists. Metadata untouched.")
         exit()
     else:
         errprint(f"Automatically adding {settings_file}")
@@ -134,7 +143,7 @@ if settings_file:
     udata = base64.urlsafe_b64encode(snappy_data)
     #^ add the compressed data to the video
     cmd = f"ffmpeg -y -i {dir}/{video} -movflags use_metadata_tags -metadata configFile='{udata}' /tmp/out.mp4"
-    prun(cmd, debug=True)
+    prun(cmd, debug=False)
 
     cmd = f"cp {dir}/{video} /tmp/{video}.BAK"
     prun(cmd)
@@ -166,17 +175,16 @@ if check:
         if dataObj:
             i=1
         else:
-            msg = f"metaconfig.py -v {f} -a <settings file>"
-            errprint(Fore.MAGENTA+msg+Fore.RESET)
             id = f.split(".")[0]
             batcmd = f"locate {id}_settings.txt"
             # errprint(batcmd)
             # exit()
             try:
                 result = subprocess.check_output(batcmd, shell=True).decode('UTF-8')
-                errprint(f"\tFOUND: {result}")
+                msg = f"metaconfig.py -v {f} -a {result}"
+                errprint(Fore.MAGENTA + msg + Fore.RESET)
             except:
-                errprint(f"\tNo settings file exists")
+                errprint(Fore.RED + f"{f} has no settings file available" + Fore.RESET)
                 # traceback.print_exc()
 
 

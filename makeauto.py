@@ -6,105 +6,49 @@ from pprint import pprint
 import ffmpeg
 import subprocess
 import shutil
-from proclib import prun, splitnonalpha, getID, procTime, getFilesize, getFnames, cleanTree, cleanWildcard
+# from proclib import prun, splitnonalpha, getID, procTime, getFilesize, getFnames, cleanTree, cleanWildcard
+import proclib as p
 import time
 import procvars as g
 
 init()
 
-timestamp = round(time.time())
-
-def runExtract(filename):
-    cleanTree(f"{g.rifedir}/images")
-    cleanTree(f"{g.rifedir}/frames")
-    timeStart = time.time()
-    print(Fore.GREEN+f"Extracting images from {filename} to {g.rifedir}/images"+Fore.RESET,end="",flush=True)
-    cmd = f"ffmpeg -loglevel warning -i {filename} -r 15/1 {g.rifedir}/images/%05d.png"
-    #cmd_2 = f"ffpb -i {srcfile} -r 15/1 {args['rifedir']}/images/%05d.png"
-    prun(cmd,debug=debug)
-    fct = glob.glob(f"{g.rifedir}/images/*")
-    print(f"   ({procTime(timeStart)}), {len(fct)} images")
-
-def runInterp(filename,interpx):
-    timeStart = time.time()
-    print(Fore.GREEN+f"Interpolating images from {filename} to {g.rifedir}/images"+Fore.RESET,end="",flush=True)
-    cmd = f"{g.rifedir}/interpolate.py --input {g.rifedir}/images/ --output {g.rifedir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.rifedir}/rife/flownet-v46.pkl"
-    prun(cmd,debug=debug)
-    print(f"   ({procTime(timeStart)})")
-
-def runStitch():
-    timeStart = time.time()
-    print(Fore.GREEN+f"Stitching interpolated images (/tmp/out_{timestamp}.mp4)"+Fore.RESET,end="",flush=True)
-    cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {g.rifedir}/frames/*.jpg -c:v libx264 -pix_fmt yuv420p  /tmp/out_{timestamp}.mp4"
-    prun(cmd,debug=debug)
-    fs = getFilesize(f"/tmp/out_{timestamp}.mp4")
-    print(f"   ({procTime(timeStart)}), {fs}")
-    return f"/tmp/out_{timestamp}.mp4"
-
-def runCrop(filename,x,y):
-    timeStart = time.time()
-    print(Fore.GREEN + f"Cropping/Scaling to {x}x{y} (/tmp/scaled_{timestamp}_{id}.mp4)" + Fore.RESET, end="",flush=True)
-    # #^ see https://superuser.com/questions/1474942/ffmpeg-cropping-invalid-too-big-or-non-positive-size-for-width for ewhy these args are so complex
-    # cmd = f'ffmpeg -y -loglevel warning -i /tmp/out_{timestamp}.mp4 -vf scale=(iw*sar)*max(2040.1/(iw*sar)\,1150.1/ih):ih*max(2040.1/(iw*sar)\,1150.1/ih),crop=2040:1150 /tmp/scaled_{timestamp}_{id}.mp4'
-    outfile = f"/tmp/scaled_{timestamp}_{id}.mp4"
-    cmd = f'ffmpeg -y -loglevel warning -i {filename} -vf scale=(iw*sar)*max({x}.1/(iw*sar)\,{y}.1/ih):ih*max({x}.1/(iw*sar)\,{y}.1/ih),crop={x}:{y} {outfile}'
-    prun(cmd,debug=debug)
-    fs = getFilesize(outfile)
-    print(f"   ({procTime(timeStart)}), {fs}")
-    return outfile
-def runUpscale(srcfile):
-    timeStart = time.time()
-    print(Fore.GREEN + f"Upscaling 4x ({srcfile})" + Fore.RESET,end="",flush=True)
-    cmd = f'/home/jw/src/sdc/upscale.sh {srcfile} > /dev/null 2>&1'
-    prun(cmd,debug=True)
-    dest = f"{g.esgrandir}/results/{os.path.basename(srcfile)}"
-    dest = dest.replace(".mp4","_out.mp4")
-    fs = getFilesize(dest)
-    print(f"   ({procTime(timeStart)}), {fs}")
-
-def runFade(filename):
-    timeStart = time.time()
-    print(Fore.GREEN + f"Fading in/out ({filename})" + Fore.RESET,end="",flush=True)
-    cmd = f"{g.sdcdir}/fadeinout.sh {filename}"
-    prun(cmd,debug=debug)
-    print(Fore.GREEN + f"Moving to {dirname}/scaled_{id}.mp4" + Fore.RESET,end="",flush=True)
-    cmd = f"mv {filename} {dirname}/scaled_{id}.mp4"
-    prun(cmd,debug=debug)
-    finalFile = f"{dirname}/scaled_{id}.mp4"
-    fs = getFilesize(finalFile)
-    print(f"   ({procTime(timeStart)}), {fs}")
-    return finalFile
-def runMeta(filename,settingsFile):
-    timeStart = time.time()
-    print(Fore.GREEN + f"Embedding metadata" + Fore.RESET,end="",flush=True)
-    cmd=f"{g.sdcdir}/metaconfig.py -v {filename} -a {settingsFile}"
-    prun(cmd,debug=debug)
-    timeProc = time.time() - timeStart
-    print(f"   ({timeProc})")
+g.uid = round(time.time())
 
 def showhelp():
     print("help")
     rs = '''
     -h, --help          show help
+    -d, --debug          debug
     -v, --videofile     filename
-    -f, --xframes       add x interpolted frames
-    -Q, --sequence      select which processes to deploy
-                        Ex: 
-                        XISCFUM     runs all the processes
-                        XISCFM      runs all the processes except Upscaling (DEFAULT)
-                        EIS         interpolate only
-                        M           add metadata only
-                        EISC        Interpolate and crop 
-                        C           Crop only
+    
+    -Q, --sequence      select which processes to deployand in what order, default = 'XISCFM'
+
+    -X, --xframes       add x interpolated frames
+    -T, --tfilter       apply toss filter, values are 0.0 to 1.0, default = 0.5
+    -V, --iversion      choose which version if interpolation.  Opensa are '1' or '2', default is 1
+                        '-V 1' uses JPG format (default)
+                        '-V 2' uses PNG format (and takes up massively more space)
+
+
+-Q, --sequence examples:
+                        ETISCFUM     extract -> toss -> interp -> stitch -> crop -> fade -> metadata
+                        EISCFM       extract -> interp -> stitch -> crop -> fade -> metadata
+                        EIS          extract -> interp -> stitch
+                        M            Add metadata only
+                        EISC         Interpolate -> crop 
+                        C            Crop only
                         
                             
-                        X   Extract
+                        E   Extract images from video (at 15 fps)
+                        T   Toss by filter
                         I   Interpolate
                         S   Stitch
+                        P   Perlabel
                         C   Crop 
                         F   Fade
                         U   Upscale
-                        M   Metadata
+                        M   Add Metadata
     
     
     
@@ -116,17 +60,24 @@ def showhelp():
 filename = f"{g.sdcdir}/test.mp4"
 keyname = "duration"
 interpx = 20
+tossFilter = 0.5
 debug = False
-sqeuence = "XISCFM"
+sequence = "XISCFM"
+iversion = 1
+
+if len(sys.argv) == 1:
+    showhelp()
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hdv:f:Q:", [
+    opts, args = getopt.getopt(argv, "hdv:f:Q:X:T:V:", [
         "help",
         "debug",
         "videofile=",
-        "xframes=",
         "sequence=",
+        "xframes=",
+        "tfilter=",
+        "iversion=",
 
     ])
 except Exception as e:
@@ -139,13 +90,17 @@ for opt, arg in opts:
         debug = True
     if opt in ("-v", "--videofile"):
         filename = arg
-    if opt in ("-f", "--xframes"):
-        interx=int(arg)
     if opt in ("-Q", "--sequence"):
         sequence = arg
 
+    if opt in ("-X", "--xframes"):
+        interpx=int(arg)
+    if opt in ("-T", "--tfilter"):
+        tossFilter = float(arg)
+    if opt in ("-V", "--iversion"):
+        iversion = int(arg)
 
-basename, dirname, fspec, srcfile = getFnames(filename)
+basename, dirname, fspec, srcfile = p.getFnames(filename)
 
 
 print(f"dirname: {dirname}")
@@ -156,7 +111,7 @@ print(f"srcfile:{srcfile}")
 
 
 # ID=`echo ${FILENAME}|grep -o '[^/]*\.mp4'|awk -F"." '{print $1}'`
-id = getID(filename)
+id = p.getID(filename)
 
 dest_filename = f"{dirname}/scaled_{id}.mp4"
 if os.path.exists(dest_filename):
@@ -167,19 +122,43 @@ if os.path.exists(dest_filename):
     else:
         exit()
 
-print(Fore.GREEN)
+print(Fore.RED)
 print(f"┌──────────────────────────────────────────────")
 print(f"│INPUT: {filename}")
 print(f"└──────────────────────────────────────────────")
 print(Fore.RESET)
 
-if "X" in sqeuence: runExtract(srcfile)                                    #[X]
-if "I" in sqeuence:runInterp(filename, interpx)                            #[I]
-if "S" in sqeuence:srcfile = runStitch()                                   #[S]
-if "C" in sqeuence:srcfile = runCrop(srcfile,512,278)                      #[C]
-if "F" in sqeuence:srcfile = runFade(srcfile)                              #[F]
-if "U" in sqeuence:runUpscale(srcfile)                                     #[U]
-if "M" in sqeuence:metaFile=runMeta(srcfile,f"{dirname}/{id}_settings.txt")#[M]
+imgdir = ""
+for q in sequence:
+    match q:
+        case "E": #[E]
+            imgdir = p.runExtract(srcfile,debug=debug)
+            print(Fore.CYAN+f"Extracted {srcfile}"+Fore.RESET)
+        case "T": #[T]
+            imgdir, pctTossed, totalImg = p.runToss(imgdir,tossFilter,debug=debug)
+            print(Fore.CYAN + f"Filter {tossFilter} tossed {pctTossed}% ({round(totalImg*(pctTossed/100))}) of {totalImg} images" + Fore.RESET)
+        case "I": #[I]
+            imgdir, totalImg = p.runInterp(interpx, version=iversion,debug=debug)
+            print(Fore.CYAN + f"Interpolated images (V{iversion}) by {interpx}, {totalImg} total images " + Fore.RESET)
+        case "S": #[S]
+            srcfile, namedfile = p.runStitch(imgdir,debug=debug)
+            print(Fore.CYAN+f"Stitched images in {dirname} to {srcfile} ({namedfile})"+Fore.RESET)
+        case "P": #[P]
+            srcfile = p.runPerlabel(srcfile,debug=True)
+            print(Fore.CYAN+f"Perlabeled {srcfile}"+Fore.RESET)
+        case "C": #[C]
+            srcfile = p.runCrop(srcfile,512,278,debug=debug)
+            print(Fore.CYAN+f"Cropped to {srcfile} to 512x278"+Fore.RESET)
+        case "F": #[F]
+            srcfile = p.runFade(f"{srcfile}",debug=debug)
+            print(Fore.CYAN+f"Faded to {srcfile}"+Fore.RESET)
+        case "U": #[U]
+            srcfile = p.runUpscale(srcfile,debug=debug)
+            print(Fore.CYAN+f"Upscaled to {srcfile}"+Fore.RESET)
+        case "M": #[M]
+            metaFile=p.runMeta(srcfile,f"{dirname}/{id}_settings.txt",debug=debug)
+            print(Fore.CYAN+f"Updating metadata on {srcfile}"+Fore.RESET)
+
 #^ 'M' must happen AFTER everything else as envelope is NOT saved
 print(Fore.GREEN)
 print(f"┌──────────────────────────────────────────────")
