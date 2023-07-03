@@ -30,10 +30,10 @@ def showhelp():
 
 #[ MAIN ]
 
-fromfile = "sdw/xy_36x6.txt"
-id = "000000000000000"
-dir = "/tmp"
-rifedir = "/home/jw/src/rife"
+settings_file = False
+id = False
+srcfile_dir = False
+tmpdir = "/tmp/images"
 
 argv = sys.argv[1:]
 try:
@@ -51,15 +51,21 @@ for opt, arg in opts:
     if opt in ("-i", "--id"):
         id = arg
     if opt in ("-d", "--dir"):
-        dir = arg
+        srcfile_dir = arg
     if opt in ("-s", "--settings"):
-        fromfile = arg
+        settings_file = arg
 
+
+print(f"dir: {srcfile_dir}")
+print(f"settings_file: {settings_file}")
+# exit()
 #^ load original template into JSON array
-f = open(fromfile)
+f = open(settings_file)
 aorg = json.load(f)
 
-errprint(f"Reading Settings File: {fromfile}")
+
+
+errprint(f"Reading Settings File: {settings_file}")
 
 sam_sch = json.dumps(aorg['sampler_schedule'])
 chk_sch = json.dumps(aorg['checkpoint_schedule'])
@@ -126,34 +132,36 @@ for i in range(len(chk_matches)):
         pass
 
 
+cleanTree(f"{tmpdir}")
 
-# cleanTree(f"{rifedir}/images")
-
-srcfile = f"{id}.mp4"
+srcfile = f"{srcfile_dir}/{id}.mp4"
 timeStart = time.time()
-cleanWildcard(f"{dir}/*.png")
-print(Fore.GREEN + f"Extracting images from {srcfile} to {dir}" + Fore.RESET, end="",file=sys.stderr)
-cmd = f"ffmpeg -loglevel warning -i {srcfile} -r 15/1 {dir}/{id}_%05d.png"
-prun(cmd)
+cleanWildcard(f"{tmpdir}/*.png")
+print(Fore.GREEN + f"Extracting images from {srcfile} to {tmpdir}" + Fore.RESET, end="",file=sys.stderr)
+cmd = f"ffmpeg -loglevel warning -i {srcfile} -r 15/1 {tmpdir}/{id}_%05d.png"
+prun(cmd,debug=True)
 errprint(f"   ({procTime(timeStart)})")
 
-gfiles = glob.glob(f"{dir}/*.png")
-# print(f"{dir}/*.png",gfiles)
+gfiles = glob.glob(f"{tmpdir}/*.png") #^ get the list of files, full path name
+print(f"{tmpdir}/*.png",gfiles)
 filenums = []
 for gfile in gfiles:
     # fnum = re.findall("[\d]*_(\d\d\d\d\d\d\d\d\d).png",gfile,re.DOTALL)
     # filenums.append(int(fnum[0]))
-    fnum = re.findall(".*.png",gfile,re.DOTALL)
+    fnum = re.findall(".*.png",gfile,re.DOTALL) #^ extract just te numenr from the filename and add to list
+
+    print(fnum[0])
     filenums.append(fnum[0])
 
-# print(filenums)
 # colorname at https://magickstudio.imagemagick.org/Color.html
 # colorname at https://magickstudio.imagemagick.org/Color.htm
 
+
+#[ SAMPLER label]
 timeStart = time.time()
 print(Fore.CYAN + f"Applying Sampler Label", end="")
-for i in range(len(filenums)):
-    filename = f"{id}_{ (i+1):05d}.png"
+for i in range(len(filenums)): #^ loop through by incremental i
+    filename = f"{id}_{ (i+1):05d}.png" #^ make basename  from i
     for pair in sam_pairs:
         if i>=pair[0] and  i<pair[1]:
             label = f"{pair[2]}"
@@ -161,9 +169,9 @@ for i in range(len(filenums)):
             # print(f"{filename} -> {label}")
             fontsize = int(512 / 21)
             # errprint(Fore.CYAN+f"Updating: {filename} with {label}"+Fore.RESET)
-            cmd1=f"convert {dir}/{filename}  -background PaleVioletRed	 -pointsize {fontsize} -fill maroon label:{label} -gravity Center -append /tmp/outlabel.png"
-            prun(cmd1)
-            cmd2=f"mv /tmp/outlabel.png {dir}/{filename}"
+            cmd1=f"convert {tmpdir}/{filename}  -background PaleVioletRed	 -pointsize {fontsize} -fill maroon label:{label} -gravity Center -append /tmp/outlabel.png"
+            prun(cmd1,debug=True)
+            cmd2=f"mv /tmp/outlabel.png {tmpdir}/{filename}"
             prun(cmd2)
 print(f"   ({procTime(timeStart)})")
 
@@ -178,9 +186,9 @@ for i in range(len(filenums)):
             # print(f"{filename} -> {label}")
             fontsize = int(512 / 21)
             # errprint(Fore.YELLOW+f"Updating: {filename} with {label}"+Fore.RESET)
-            cmd1=f"convert {dir}/{filename}  -background SlateGray2	  -pointsize {fontsize} -fill NavyBlue label:{label} -gravity Center -append /tmp/outlabel.png"
+            cmd1=f"convert {tmpdir}/{filename}  -background SlateGray2	  -pointsize {fontsize} -fill NavyBlue label:{label} -gravity Center -append /tmp/outlabel.png"
             prun(cmd1)
-            cmd2=f"mv /tmp/outlabel.png {dir}/{filename}"
+            cmd2=f"mv /tmp/outlabel.png {tmpdir}/{filename}"
             prun(cmd2)
 print(f"   ({procTime(timeStart)})")
 
@@ -195,18 +203,18 @@ for i in range(len(filenums)):
             # print(f"{filename} -> {label}")
             fontsize = int(512 / 35)
             # errprint(Fore.MAGENTA+f"Updating: {filename} with {label}"+Fore.RESET)
-            cmd1=f"convert {dir}/{filename}  -background SlateGray2	  -pointsize {fontsize} -fill NavyBlue label:{label} -gravity Center -append /tmp/outlabel.png"
+            cmd1=f"convert {tmpdir}/{filename}  -background SlateGray2	  -pointsize {fontsize} -fill NavyBlue label:{label} -gravity Center -append /tmp/outlabel.png"
             prun(cmd1)
-            cmd2=f"mv /tmp/outlabel.png {dir}/{filename}"
+            cmd2=f"mv /tmp/outlabel.png {tmpdir}/{filename}"
             prun(cmd2)
 print(f"   ({procTime(timeStart)})")
 
 # #^ stitch video
 timeStart = time.time()
 print(Fore.GREEN + f"Stitching video" + Fore.RESET, end="",file=sys.stderr)
-cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {dir}/*.png  -c:v libx264 -pix_fmt yuv420p /tmp/out.mp4"
+cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {tmpdir}/*.png  -c:v libx264 -pix_fmt yuv420p /tmp/out.mp4"
 prun(cmd)
-cmd = f"mv /tmp/out.mp4 {dir}/labeled_{id}.mp4"
+cmd = f"mv /tmp/out.mp4 {srcfile_dir}/labeled_{id}.mp4"
 prun(cmd)
 errprint(f"   ({procTime(timeStart)})")
-cleanWildcard(f"{dir}/*.png")
+cleanWildcard(f"{tmpdir}/*.png")

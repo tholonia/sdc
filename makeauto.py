@@ -22,7 +22,7 @@ def showhelp():
     -d, --debug          debug
     -v, --videofile     filename
     
-    -Q, --sequence      select which processes to deployand in what order, default = 'XISCFM'
+    -Q, --sequence      select which processes to deployand in what order, default = 'SISCFM'
 
     -X, --xframes       add x interpolated frames
     -T, --tfilter       apply toss filter, values are 0.0 to 1.0, default = 0.5
@@ -33,23 +33,28 @@ def showhelp():
 
 -Q, --sequence examples:
                         ETISCFUM     extract -> toss -> interp -> stitch -> crop -> fade -> metadata
-                        EISCFM       extract -> interp -> stitch -> crop -> fade -> metadata
+             (default)  EISCFM       extract -> interp -> stitch -> crop -> fade -> metadata
                         EIS          extract -> interp -> stitch
                         M            Add metadata only
                         EISC         Interpolate -> crop 
                         C            Crop only
                         
                             
-                        E   Extract images from video (at 15 fps)
-                        T   Toss by filter
-                        I   Interpolate
-                        S   Stitch
-                        P   Perlabel
-                        C   Crop 
-                        F   Fade
-                        U   Upscale
-                        M   Add Metadata
+                        E   Extract images from video (at 15 fps)   (V>I)
+                        T   Toss by filter                          (I>nI)
+                        I   Interpolate                             (I>nI)
+                        S   Stitch                                  (I>V)
+                        P   Perlabel                                (V>nV)
+                        C   Crop                                    (V>nV)
+                        F   Fade                                    (V>V)
+                        U   Upscale                                 (V>nV)
+                        M   Add Metadata                            (V>V)
     
+                        V = video, I = Images, > = transform
+                        (V-nV) = "video to new video"
+                        (V-V) = "video to same video"
+                        (V-I) = "video to images"
+                        (I-nI) = "Images to new images"
     
     
 '''
@@ -107,7 +112,7 @@ print(f"dirname: {dirname}")
 print(f"basename: {basename}")
 print(f"srcfile:{srcfile}")
 
-
+# exit()
 
 
 # ID=`echo ${FILENAME}|grep -o '[^/]*\.mp4'|awk -F"." '{print $1}'`
@@ -124,7 +129,7 @@ if os.path.exists(dest_filename):
 
 print(Fore.RED)
 print(f"┌──────────────────────────────────────────────")
-print(f"│INPUT: {filename}")
+print(f"│INPUT: {srcfile}")
 print(f"└──────────────────────────────────────────────")
 print(Fore.RESET)
 
@@ -143,8 +148,9 @@ for q in sequence:
         case "S": #[S]
             srcfile, namedfile = p.runStitch(imgdir,debug=debug)
             print(Fore.CYAN+f"Stitched images in {dirname} to {srcfile} ({namedfile})"+Fore.RESET)
+        #- temporarily disabled
         case "P": #[P]
-            srcfile = p.runPerlabel(srcfile,debug=True)
+            srcfile = p.runPerlabel(srcfile,debug=debug)
             print(Fore.CYAN+f"Perlabeled {srcfile}"+Fore.RESET)
         case "C": #[C]
             srcfile = p.runCrop(srcfile,512,278,debug=debug)
@@ -162,7 +168,7 @@ for q in sequence:
 #^ 'M' must happen AFTER everything else as envelope is NOT saved
 print(Fore.GREEN)
 print(f"┌──────────────────────────────────────────────")
-print(f"│OUTPUT:   {srcfile}")
+print(f"│OUTPUT:  vlc {srcfile}")
 print(f"└──────────────────────────────────────────────")
 print(Fore.RESET)
 

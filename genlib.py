@@ -1203,16 +1203,21 @@ cells = [
 ]
 models = [
 #^ center stable
+    "526sCuspOfSerenity_v1.safetensors [debc7b907a]",  # hydrogen atom = woman
+    "colorFusionXEris_12.safetensors [0eb1c40a61]",  # good colors, bad design
+    "photographyAnd_10.safetensors [05532cb3ce]",
     "deliberate_v2.safetensors [9aba26abdf]",
-    "DUP_deliberate_v2.safetensors [9aba26abdf]",
-    # "dreamlike-photoreal-2.0.ckpt [fc52756a74]",
-    # "dreamshaper_5BakedVae.safetensors [a60cfaa90d]",
-    # "Protogen_V2.2.ckpt [bb725eaf2e]",
+    "realisticVisionV20_v20.safetensors [c0d1994c73]",
+    "Protogen_V2.2.ckpt [bb725eaf2e]", # default SD model
+    "sd-v1-4.ckpt [fe4efff1e1]", #hydrogen atom = horible colrs, horrible form
+    # "dreamlike-photoreal-2.0.ckpt [fc52756a74]", # makes overly complex images that devolve into chaos
     #
+    #- DELETED
+
+    # "dreamshaper_5BakedVae.safetensors [a60cfaa90d]",
     # "HassanBlend1.4_Safe.safetensors [b08fdba169]",
     # "f222.ckpt [9e2c6ceff3]",
     # "meinamix_meinaV9.safetensors [eac6c08a19]",
-    # "sd-v1-4.ckpt [fe4efff1e1]",
     # "v1-5-pruned-emaonly.safetensors [6ce0161689]",
     #
     # "modelshoot-1.0.safetensors [80dc271195]",
@@ -1223,7 +1228,6 @@ models = [
     # # creates girls :/
     # "ghostmix_v20Bakedvae.safetensors [e3edb8a26f]",
     # "anythingV3_fp16.ckpt [812cd9f9d9]",
-    # "realisticVisionV20_v20.safetensors [c0d1994c73]",
     # "abyssorangemix3AOM3_aom3a1b.safetensors [5493a0ec49]",
 
 ]

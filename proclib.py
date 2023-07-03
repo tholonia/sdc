@@ -13,7 +13,45 @@ import time
 import ffmpeg
 import json
 import random
+import numpy as np
 init()
+
+def tryit(kwargs,arg,default):
+    try:
+        rs = kwargs[arg]
+    except:
+        rs = default
+    return rs
+
+def cycle_in_range(number, amin, amax, invert=False):
+    try:
+        mod_num = number % amax
+    except:
+        mod_num = 0
+
+    try:
+        mod_num2 = number % (amax * 2)
+    except:
+        mod_num2 = 0
+
+    new_val1 = abs(mod_num2 - (mod_num * 2))
+
+    old_min = 0
+    old_min = 0
+    old_max = amax
+    new_max = amax
+    new_min = amin
+
+    try:
+        new_value = ((new_val1 - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+    except:
+        new_value = 0
+
+    new_value = amax - new_value if invert else new_value
+
+    return (round(new_value))
+
+
 
 def rot_left(l, n):
     return l[n:] + l[:n]
@@ -33,10 +71,11 @@ def shiftary(a):
             a.append(item)
     return a
 def viduration(filename,**kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
     keyname = False
     probe = ffmpeg.probe(filename)
     video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
@@ -47,10 +86,11 @@ def viduration(filename,**kwargs):
         dur_sec = video_streams[0]['duration']
         return int(round(float(dur_sec))), dur_sec
 def runExtract(filename,**kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
 
     cleanTree(f"{g.tmpdir}/images")
     cleanTree(f"{g.tmpdir}/frames")
@@ -64,10 +104,11 @@ def runExtract(filename,**kwargs):
     return f"{g.tmpdir}/images"
 
 def runToss(location,tossFilter,**kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
 
     cleanTree(f"{g.tmpdir}/filtered")
     cleanTree(f"{g.tmpdir}/tossed")
@@ -88,15 +129,18 @@ def runToss(location,tossFilter,**kwargs):
 
 
 def runInterp(interpx,**kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
 
-    try:
-        version = kwargs['version']
-    except:
-        version = 1
+    debug = tryit(kwargs,'debug',False)
+    version = tryit(kwargs,'version',1)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
+    #
+    # try:
+    #     version = kwargs['version']
+    # except:
+    #     version = 1
 
 
 
@@ -104,7 +148,7 @@ def runInterp(interpx,**kwargs):
     print(Fore.GREEN+f"Interpolating images from {g.tmpdir}/images to {g.tmpdir}/frames"+Fore.RESET,end="",flush=True)
     cmd = False
     if version == 1:
-        cmd = f"{g.rifedir}/interpolate.py --input {g.tmpdir}/images/ --output {g.tmpdir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.tmpdir}/rife/flownet-v46.pkl"
+        cmd = f"{g.rifedir}/interpolate.py --input {g.tmpdir}/images/ --output {g.tmpdir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.rifedir}/rife/flownet-v46.pkl"
     if version == 2:
         cmd = f"{g.rifedir}/interpV2.py --ext png --input {g.tmpdir}/images/ --output {g.tmpdir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.rifedir}/rife/flownet-v46.pkl"
 
@@ -114,14 +158,7 @@ def runInterp(interpx,**kwargs):
     return f"{g.tmpdir}/frames", totalImg
 
 def runStitch(dirname, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
-    # try:
-    #     ext = kwargs['ext']
-    # except:
-    #     ext = "jpg"
+    debug = tryit(kwargs,'debug',False)
 
     #^ what kind of files?
     imgs = glob.glob(f"{dirname}/*.png")
@@ -143,11 +180,7 @@ def runStitch(dirname, **kwargs):
 
 
 def runPerlabel(filename,**kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
-
+    debug = tryit(kwargs,'debug',False)
     cleanTree(f"{g.tmpdir}/images")
     cleanTree(f"{g.tmpdir}/frames")
     id = getID(filename)
@@ -157,16 +190,18 @@ def runPerlabel(filename,**kwargs):
     basename = os.path.basename(filename)
     nameonly = basename.replace(".mp4","")
 
-    cmd= f"perlabel.py -d {dirname} -i {basename} -s {dirname}/{nameonly}_settings.txt"
+    cmd= f"perlabel.py -d {dirname} -i {id} -s {dirname}/{nameonly}_settings.txt"
     prun(cmd,debug=debug)
     print(f"   ({procTime(timeStart)})")
     return f"{g.tmpdir}/labeled_{id}.mp4"
 
 def runCrop(filename,x,y, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
     fid = getID(filename)
     timeStart = time.time()
     print(Fore.GREEN + f"Cropping/Scaling to {x}x{y} (/tmp/scaled_{g.uid}_{fid}.mp4)" + Fore.RESET, end="",flush=True)
@@ -179,29 +214,32 @@ def runCrop(filename,x,y, **kwargs):
     print(f"   ({procTime(timeStart)}), {fs}")
     return outfile
 def runUpscale(srcfile, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
 
     timeStart = time.time()
     print(Fore.GREEN + f"Upscaling 4x ({srcfile})" + Fore.RESET,end="",flush=True)
-    cmd = f'/home/jw/src/sdc/upscale.sh {srcfile} > /dev/null 2>&1'
-    prun(cmd,debug=True)
+    cmd = f'/home/jw/src/sdc/upscale.sh {srcfile}' # > /dev/null 2>&1'
+    prun(cmd,debug=debug)
     dest = f"{g.esgrandir}/results/{os.path.basename(srcfile)}"
     dest = dest.replace(".mp4","_out.mp4")
     fs = getFilesize(dest)
     print(f"   ({procTime(timeStart)}), {fs}")
-    cmd = f"mv /home/jw/src/Real-ESRGAN/results/{os.path.basename(srcfile)} {os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
-    prun(cmd)
+    outfile = srcfile.replace(".mp4","_out.mp4")
+    cmd = f"mv /home/jw/src/Real-ESRGAN/results/{os.path.basename(outfile)} {os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
+    prun(cmd,debug=True)
 
     return f"{os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
 
 def runFade(filename, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
     fid = getID(filename)
     timeStart = time.time()
     print(Fore.GREEN + f"Fading in/out ({filename})..." + Fore.RESET,end="",flush=True)
@@ -220,10 +258,12 @@ def runFade(filename, **kwargs):
     print(f"   ({procTime(timeStart)})")
     return filename
 def runMeta(filename,settingsFile, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
 
     timeStart = time.time()
     print(Fore.GREEN + f"Embedding metadata" + Fore.RESET,end="",flush=True)
@@ -233,10 +273,22 @@ def runMeta(filename,settingsFile, **kwargs):
     print(f"   ({timeProc})")
 
 
+def np_normalize(x, newRange=(0, 1)):  # x is an array. Default range is between zero and one
+    xmin, xmax = np.min(x), np.max(x)  # get max and min from input array
+    norm = (x - xmin) / (xmax - xmin)  # scale between zero and one
 
-def normalize(numbers):
+    if newRange == (0, 1):
+        return norm  # wanted range is the same as norm
+    elif newRange != (0, 1):
+        return (norm * (newRange[1] - newRange[0]) + newRange[0])  # scale to a different range.
+    # add other conditions here. For example, an error message
+
+
+
+def normalize(numbers, **kwargs):
     minimum = min(numbers)
     maximum = max(numbers)
+
     normalized = [(x - minimum) / (maximum - minimum) for x in numbers]
     return normalized
 def Diff_img(img0, img):
@@ -260,25 +312,33 @@ def getId(filename):
     id = fnum[0]
     return id
 
-def getFnames(filename):
-    basename = os.path.basename(filename)
-    dirname = os.path.dirname(filename)
+def getFnames(locationpath):
+    print(locationpath)
+    basename = os.path.basename(locationpath)
+    dirname = os.path.dirname(locationpath)
+    if not dirname:
+        dirname = os.getcwd()
+        locationpath = dirname+"/"+basename
+
     fspec = False
-    if os.path.isabs(filename):
-        basename = os.path.basename(filename)
-        dirname = os.path.dirname(filename)
-        fspec = "abs"
-    elif os.path.isfile(filename):
-        basename = filename
-        dirname = "."
-        fspec = "rel"
-    elif os.path.isdir(filename):
-        dirname = filename
+
+    # ^ order is important
+    if os.path.isdir(locationpath):
+        dirname = locationpath
         basename = False
         fspec = "dir"
+    elif os.path.isabs(locationpath):
+        basename = os.path.basename(locationpath)
+        dirname = os.path.dirname(locationpath)
+        fspec = "abs"
+    elif os.path.isfile(locationpath):
+        basename = locationpath
+        dirname = os.getcwd()
+        fspec = "rel"
     else:
-        print("Bad path argumentment")
+        print(f"Bad {fspec} path argument or '{dirname}/{basename}' does not exist")
         exit()
+
     srcfile = f"{dirname}/{basename}"
     return basename,dirname,fspec,srcfile
 
@@ -341,10 +401,12 @@ def splitnonalpha(s):
 
 
 def prun(cmd, **kwargs):
-    try:
-        debug = kwargs['debug']
-    except:
-        debug = False
+    debug = tryit(kwargs,'debug',False)
+
+    # try:
+    #     debug = kwargs['debug']
+    # except:
+    #     debug = False
 
     if debug:
         print("\n"+'──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────')
