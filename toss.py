@@ -19,9 +19,10 @@ def showhelp():
     print("help")
     rs = '''
     -h, --help          show help
-    
+    -d, --debug
     -r, --reuse         reuse last data 
     -f, --filter        filter all below this (0.0 - 1.0) default 0.1
+    -k, --keep          keep every nth frame
     -v, --video         video file OR directory of extracted images
 '''
     print(rs)
@@ -29,29 +30,36 @@ def showhelp():
 
 
 reuseData = False
-filter = 0.1
+filter = False
+keep = False
 dirname = False
 argv = sys.argv[1:]
 locationpath = False
 basename = ""
+debug = False
 
 try:
-    opts, args = getopt.getopt(argv, "hrf:v:", [
+    opts, args = getopt.getopt(argv, "hrf:k:v:d", [
         "help",
         "reuse",
         "filter=",
+        "keep=",
         "video=",
+        "debug=",
     ])
 except Exception as e:
     print(str(e))
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         showhelp()
+    if opt in ("-d", "--debug"):
+        debug = True
     if opt in ("-v", "--video"):
         locationpath = arg
-
     if opt in ("-f", "--filter"):
         filter = float(arg)
+    if opt in ("-k", "--keep"):
+        keep = int(arg)
     if opt in ("-d", "--dirname"):
         dirname = arg
     if opt in ("-r", "--reuse"):
@@ -99,21 +107,27 @@ if os.path.exists(f"{dir}/rsAry.json"):
 
 # make sure there is a directory for filtering abd backup
 
-cleanTree(f"{g.tmpdir}/filtered")
-cleanTree(f"{g.tmpdir}/tossed")
+# cleanTree(f"{g.tmpdir}/filtered")
+# cleanTree(f"{g.tmpdir}/tossed")
 
 rsAry = []  # ^ array that hols filenames and diffs
 nAry = []  # ^ just for diffs
 
 for i in range(1, len(files)):
     print(i,end="\r")
-    rs = Diff_img(cv2.imread(files[i - 1]), cv2.imread(files[i]))
+    if filter != False:
+        rs = Diff_img(cv2.imread(files[i - 1]), cv2.imread(files[i]))
+    else:
+        rs = -1
     rs = rs * 1 #^ to convert from numpy int to python int
     rsAry.append([rs,files[i-1],files[i],0]) #^ 0 is a placeholder
     nAry.append(int(rs))
 
 #^ create normalized diff values
-nmAry = normalize(nAry)
+if filter != False:
+    nmAry = normalize(nAry)
+else:
+    nmAry = nAry
 #^ and update the array of files
 for i in range(len(nmAry)):
     rsAry[i][3]=nmAry[i]
@@ -126,29 +140,42 @@ print(f"Created stored data ({len(rsAry)} items)...")
 
 #- START FILTERING
 
+
 fcount = 0
-gcount = 0
-
-
-
-for item in rsAry:
-    # print(item)
-    if item[3] < filter:
-        if os.path.exists(item[1]):
-            shutil.copy(item[1], f"{g.tmpdir}/tossed")
-            print(Fore.RED+f"Tossed: {item[1]}"+Fore.RESET)
-            fcount +=1
+if keep != False:
+    i=0
+    for item in rsAry:
+        if i%keep!=0:
+            if os.path.exists(item[1]):
+                print(Fore.RED+f"Keep Tossed: {item[1]} to {g.tmpdir}/tossed"+Fore.RESET)
+                cmd=f"cp {item[1]} {g.tmpdir}/tossed"
+                prun(cmd,debug=debug)
+                # shutil.copy(item[1], f"{g.tmpdir}/tossed")
+                fcount +=1
         else:
-            print(Fore.GREY+f"Phantom : {item[1]}"+Fore.RESET)
-            gcount +=1
-    else:
-        print(Fore.GREEN + f"Filtered: {item[1]}" + Fore.RESET)
-        shutil.copy(item[1], f"{g.tmpdir}/filtered")
+            print(Fore.GREEN + f"Keep Filtered: {item[1]} to {g.tmpdir}/filtered" + Fore.RESET)
+            cmd = f"cp {item[1]} {g.tmpdir}/filtered"
+            prun(cmd, debug=debug)
+            # shutil.copy(item[1], f"{g.tmpdir}/filtered")
+        i+=1
 
-left = glob.glob(f"{g.tmpdir}/filtered/*.png")
+if filter != False:
+    for item in rsAry:
+        # print(item)
+        if item[3] < filter:
+            if os.path.exists(item[1]):
+                shutil.copy(item[1], f"{g.tmpdir}/tossed")
+                print(Fore.RED+f"Delta Tossed: {item[1]}"+Fore.RESET)
+                fcount +=1
+        else:
+            print(Fore.GREEN + f"Delta Filtered: {item[1]}" + Fore.RESET)
+            shutil.copy(item[1], f"{g.tmpdir}/filtered")
+
+filteredCt = len(glob.glob(f"{g.tmpdir}/filtered/*"))
+tossedCt = len(glob.glob(f"{g.tmpdir}/tossed/*"))
 orgCt = len(rsAry)
 
-print(f"Original: {orgCt} "+Fore.GREEN+f"Remaining: {len(left)}, "+Fore.RED+f"Filtered: {fcount} "+Fore.RESET+" Total filtered: {gcount+fcount}, Pct Removed: {((gcount+fcount)/orgCt)*100:.2f}%")
+print(f"Original: {orgCt} "+Fore.GREEN+f"Remaining: {filteredCt}, "+Fore.RED+f", Pct Removed: {tossedCt/(filteredCt+tossedCt)*100:.2f}%")
 
 if fspec != "dir":
     stichedVid = runStitch(f"{g.tmpdir}/filtered", debug=True, ext="png")

@@ -16,6 +16,7 @@ import base64
 from base64 import b64encode, b64decode
 import traceback
 import re
+import proclib as p
 init()
 
 def getId(filename):
@@ -44,7 +45,8 @@ def showhelp():
     -h, --help          show help
     -a, --add           add file
     -v, --video         video file
-    -A, --auto          automatically add settings based on ID
+    -A, --auto          find settings based on ID
+    -R, --autorun       automatically add settings based on ID
     -c, --check         check ALL mp4 files in CURRENT directory
 '''
     errprint(rs)
@@ -52,18 +54,22 @@ def showhelp():
 
 settings_file = False
 video = False
-dir = ""
+dir = os.getcwd()
 auto = False
+autorun = False
 check = False
+
+basename,dir,fspec,srcfile = p.getFnames(dir)
 
 argv = sys.argv[1:]
 
 try:
-    opts, args = getopt.getopt(argv, "ha:xv:Ac", [
+    opts, args = getopt.getopt(argv, "ha:xv:ARc", [
         "help",
         "add=",
         "video=",
         "auto",
+        "autorun",
         "check",
     ])
 except Exception as e:
@@ -81,6 +87,8 @@ for opt, arg in opts:
             exit()
     if opt in ("-A", "--auto"):
         auto = True
+    if opt in ("-R", "--autorun"):
+        autorun = True
     if opt in ("-v", "--video"):
         if os.path.isabs(arg):
             video = os.path.basename(arg)
@@ -168,7 +176,7 @@ else:
             # msg = f"EMPTY: Run 'metaconfig.py -v {video} -a <settings file>"
             # errprint(Fore.RED+msg+Fore.RESET)
 
-if check:
+if check or autorun:
     files = glob.glob("*.mp4")
     for f in files:
         dataObj = getdata(f)
@@ -181,7 +189,9 @@ if check:
             # exit()
             try:
                 result = subprocess.check_output(batcmd, shell=True).decode('UTF-8')
-                msg = f"metaconfig.py -v {f} -a {result}"
+                msg = f"metaconfig.py -v {dir}/{f} -a {result}"
+                if autorun:
+                    p.prun(msg)
                 errprint(Fore.MAGENTA + msg + Fore.RESET)
             except:
                 errprint(Fore.RED + f"{f} has no settings file available" + Fore.RESET)

@@ -27,7 +27,7 @@ def showhelp():
 '''
     print(rs)
     exit()
-filename = "/home/jw/src/sdc/zzzzz.mp4"
+filename = False
 keyname = "duration"
 argv = sys.argv[1:]
 try:
@@ -47,6 +47,9 @@ for opt, arg in opts:
     if opt in ("-k", "--key"):
         keyname = arg
 
+if filename == False:
+    print(f"missing filename pof switch (-v)")
+    exit()
 # errprint(f"viduration: filename: {filename}")
 probe = ffmpeg.probe(filename)
 video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
@@ -55,5 +58,6 @@ if keyname == "all":
     exit()
 else:
     dur_sec = video_streams[0]['duration']
-    print(int(round(float(dur_sec))), dur_sec, filename)
+    dur_ts = video_streams[0]['duration_ts']
+    print(int(round(float(dur_sec))), dur_sec, filename,dur_ts)
 

@@ -29,6 +29,7 @@ def showhelp():
     -V, --iversion      choose which version if interpolation.  Opensa are '1' or '2', default is 1
                         '-V 1' uses JPG format (default)
                         '-V 2' uses PNG format (and takes up massively more space)
+    -K, --keep          Keep ever nth frame when tossing                        
 
 
 -Q, --sequence examples:
@@ -41,11 +42,11 @@ def showhelp():
                         
                             
                         E   Extract images from video (at 15 fps)   (V>I)
-                        T   Toss by filter                          (I>nI)
-                        I   Interpolate                             (I>nI)
+                        T   Toss by filter                          (I>nI) -K,--keep <n>
+                        I   Interpolate                             (I>nI) -X, --xframes = <n>, -T, --tfilter <0.0 - 1.0>
                         S   Stitch                                  (I>V)
                         P   Perlabel                                (V>nV)
-                        C   Crop                                    (V>nV)
+                        C   Crop                                    (V>nV) 
                         F   Fade                                    (V>V)
                         U   Upscale                                 (V>nV)
                         M   Add Metadata                            (V>V)
@@ -67,6 +68,7 @@ keyname = "duration"
 interpx = 20
 tossFilter = 0.5
 debug = False
+keep = False
 sequence = "XISCFM"
 iversion = 1
 
@@ -75,7 +77,7 @@ if len(sys.argv) == 1:
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hdv:f:Q:X:T:V:", [
+    opts, args = getopt.getopt(argv, "hdv:f:Q:X:T:V:K:", [
         "help",
         "debug",
         "videofile=",
@@ -83,6 +85,7 @@ try:
         "xframes=",
         "tfilter=",
         "iversion=",
+        "keep=",
 
     ])
 except Exception as e:
@@ -98,6 +101,8 @@ for opt, arg in opts:
     if opt in ("-Q", "--sequence"):
         sequence = arg
 
+    if opt in ("-K", "--keep"):
+        keep=int(arg)
     if opt in ("-X", "--xframes"):
         interpx=int(arg)
     if opt in ("-T", "--tfilter"):
@@ -140,13 +145,14 @@ for q in sequence:
             imgdir = p.runExtract(srcfile,debug=debug)
             print(Fore.CYAN+f"Extracted {srcfile}"+Fore.RESET)
         case "T": #[T]
-            imgdir, pctTossed, totalImg = p.runToss(imgdir,tossFilter,debug=debug)
-            print(Fore.CYAN + f"Filter {tossFilter} tossed {pctTossed}% ({round(totalImg*(pctTossed/100))}) of {totalImg} images" + Fore.RESET)
+            imgdir, pctTossed, totalImg, filtered, tossed = p.runToss(imgdir,tossFilter,debug=debug, keep=keep)
+            print(Fore.CYAN + f"Processed {totalImg}, Kept {filtered} in /tmp/filtered, tossed {tossed} in /tmp/tossed ({pctTossed}%)"+Fore.RESET)
+
         case "I": #[I]
-            imgdir, totalImg = p.runInterp(interpx, version=iversion,debug=debug)
+            imgdir, totalImg = p.runInterp(interpx, imgdir=imgdir,version=iversion,debug=debug)
             print(Fore.CYAN + f"Interpolated images (V{iversion}) by {interpx}, {totalImg} total images " + Fore.RESET)
         case "S": #[S]
-            srcfile, namedfile = p.runStitch(imgdir,debug=debug)
+            srcfile, namedfile = p.runStitch(imgdir,version=iversion,debug=debug)
             print(Fore.CYAN+f"Stitched images in {dirname} to {srcfile} ({namedfile})"+Fore.RESET)
         #- temporarily disabled
         case "P": #[P]

@@ -21,23 +21,23 @@ def showhelp():
     print("help")
     rs = '''
     -h, --help          show help
-    -d, --dir           directory
+    -f, --filespec      filespec (incl. dir)
     -D, --destdir           directory
     -r, --rename           rename
     -v, --verbose
     -R, --res           resolution n (nxn)
 '''
-dir = "./outputs/batch"
-destdir = "./safe/vids"
+filespec = False
+destdir = False
 rename = False
-verbose = "-loglevel panic"
+verbose = "-loglevel warning"
 resolution = 512
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hd:r:D:vR:", [
+    opts, args = getopt.getopt(argv, "hf:r:D:vR:", [
         "help",
-        "dir=",
+        "filespec=",
         "destdir=",
         "rename=",
         "verbose",
@@ -49,12 +49,14 @@ except Exception as e:
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         showhelp();
-    if opt in ("-d", "--dir"):
-        dir = arg
+    if opt in ("-f", "--filespec"):
+        filespec = arg
     if opt in ("-r", "--rename"):
         rename = arg
     if opt in ("-D", "--destdir"):
         destdir = arg
+    else:
+        destdir=os.path.dirname(filespec)
     if opt in ("-v", "--verbose"):
         verbose = "-loglevel info"
     if opt in ("-R", "--resolution"):
@@ -133,9 +135,9 @@ def merge_v(vids):
     return(f"{dir}/merged.mp4")
 
 cleanpre()
-vids = glob.glob(f"{dir}/*.mp4")
+vids = glob.glob(filespec)
 
-print(f"{dir}/*.mp4")
+# print(f"{dir}/*.mp4")
 vids.sort()
 num_of_vids = len(vids)
 

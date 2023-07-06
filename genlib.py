@@ -1203,14 +1203,16 @@ cells = [
 ]
 models = [
 #^ center stable
-    "526sCuspOfSerenity_v1.safetensors [debc7b907a]",  # hydrogen atom = woman
-    "colorFusionXEris_12.safetensors [0eb1c40a61]",  # good colors, bad design
-    "photographyAnd_10.safetensors [05532cb3ce]",
+    "526mixV145_v145.safetensors [9d9156a477]",
+    "DucHaiten-Journey_v5.6.7.2.3.safetensors [d193ccfee5]",
+    "526sCuspOfSerenity_v1.safetensors [debc7b907a]",   # more detail, complex but not messy, hydrogen atom = woman
+    "colorFusionXEris_12.safetensors [0eb1c40a61]",     # clean, smooth, good colors, bad design
+    # "photographyAnd_10.safetensors [05532cb3ce]",       # like protogen, basic
     "deliberate_v2.safetensors [9aba26abdf]",
-    "realisticVisionV20_v20.safetensors [c0d1994c73]",
-    "Protogen_V2.2.ckpt [bb725eaf2e]", # default SD model
-    "sd-v1-4.ckpt [fe4efff1e1]", #hydrogen atom = horible colrs, horrible form
-    # "dreamlike-photoreal-2.0.ckpt [fc52756a74]", # makes overly complex images that devolve into chaos
+    # "realisticVisionV20_v20.safetensors [c0d1994c73]",  # more gritty
+    "Protogen_V2.2.ckpt [bb725eaf2e]",                  # default SD model
+    # "sd-v1-4.ckpt [fe4efff1e1]",                        # pan-and-iink-ish, grainy, hydrogen atom = horible colrs, horrible form
+    # "dreamlike-photoreal-2.0.ckpt [fc52756a74]",        # makes overly complex images that devolve into chaos
     #
     #- DELETED
 
