@@ -155,14 +155,14 @@ if settings_file:
 
     cmd = f"cp {dir}/{video} /tmp/{video}.BAK"
     prun(cmd)
-    errprint(f"back in /tmp/{video}.BAK")
+    errprint(f"backup in /tmp/{video}.BAK")
 
     cmd = f"mv /tmp/out.mp4 {dir}/{video}"
     prun(cmd)
     errprint("Data Encoded")
-#! NO SETTINSG FILE, SO ONLY VALIDATING
+#^ NO SETTINGS FILE SPECIFIED, SO ONLY VALIDATING EXCITING METADAT
 else:
-    if not check:
+    if not check: #^ No '-c' ,switch was entered, but there is a -v arg, so treated as an inmplied check
         dataObj = getdata(f"{dir}/{video}")
         if dataObj:
             # print(1,dataObj)
@@ -171,8 +171,7 @@ else:
             print(out_json)
             errprint(Fore.RESET)
         else:
-            errprint(
-                Fore.RED + f"Setting metadata appears to not exist in " + Fore.YELLOW + f"{os.getcwd()}/{video}" + Fore.RESET)
+            errprint(Fore.RED + f"Metadata missing in " + Fore.YELLOW + f"{os.getcwd()}/{video}" + Fore.RESET)
             # msg = f"EMPTY: Run 'metaconfig.py -v {video} -a <settings file>"
             # errprint(Fore.RED+msg+Fore.RESET)
 
@@ -181,20 +180,23 @@ if check or autorun:
     for f in files:
         dataObj = getdata(f)
         if dataObj:
-            i=1
-        else:
+            errprint(Fore.GREEN + f"{f} has metadata" + Fore.RESET)
+        else: #^ no metadata
             id = f.split(".")[0]
-            batcmd = f"locate {id}_settings.txt"
+            batcmd = f"locate {id}_settings.txt" #^ try and fine setting file
             # errprint(batcmd)
             # exit()
             try:
+                #^ check the results from locate
                 result = subprocess.check_output(batcmd, shell=True).decode('UTF-8')
                 msg = f"metaconfig.py -v {dir}/{f} -a {result}"
-                if autorun:
+                if autorun: #^ automatically apply settings file
                     p.prun(msg)
                 errprint(Fore.MAGENTA + msg + Fore.RESET)
-            except:
+            except: #^ locate results found nothing
                 errprint(Fore.RED + f"{f} has no settings file available" + Fore.RESET)
+                msg = f"metaconfig.py -v {dir}/{f} -a ???"
+                errprint(Fore.MAGENTA + msg + Fore.RESET)
                 # traceback.print_exc()
 
 

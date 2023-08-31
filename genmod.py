@@ -4,13 +4,17 @@ import os
 import random
 import json
 from pprint import pprint
-import matplotlib.pyplot as plt
-import numpy as np
 import proclib as p
 from scipy.ndimage import interpolation,uniform_filter1d
 from operator import itemgetter
 import math
 from colorama import Fore, init
+from scipy.signal import find_peaks
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+
 
 init()
 
@@ -109,91 +113,37 @@ def splitEmbList(s):
     return rs
 
 
-# [Rebuild "seed_scheduler" ---------------------------------------------------------------------------------------------
+def findPV(s,thresh):
 
-# ^ Get current onbjecty
-# sch_list = splitEmbList(aorg['sampler_schedule'])
+    # Input signal
+    t = np.arange(len(s))
+    series = s#0.3*np.sin(t)+0.7*np.cos(2*t)-0.5*np.sin(1.2*t)
 
-# ^ Get total number of frames
-max_frames = aorg["max_frames"]
-# ^ Get prompt keyframs
-prompts = aorg["prompts"]
-promptFrames = []
-for key in prompts:
-    promptFrames.append(int(key))
-# pprint(promptFrames)
-# exit()
+    # Threshold value (for height of peaks and valleys)
+    # thresh = 2
 
-# ^ make new element list
-newList = []
+    # Find indices of peaks
+    peak_idx, _ = find_peaks(series, height=thresh)
 
-seedVal = 1
-# for frameNum in promptFrames:
-for i in range(max_frames):
-    newList.append([i, seedVal])
-    # ^ increment seed
-    seedVal += 1
-# pprint(newList)
+    # Find indices of valleys (from inverting the signal)
+    valley_idx, _ = find_peaks(-series, height=thresh)
 
-"""
-seed_schedule need to look like:  
-    "0:(s), 1:(-1), \"max_f-2\":(-1), \"max_f-1\":(s)"
-or
-    "0:(1), 1:(2), 3:(3), 4:(4)"    
-"""
+    # Plot signal
+    plt.plot(t, series)
 
-# ^ Make vals
-strVal = ""
-for s in newList:
-    strVal += f"{s[0]}:({s[1]}),"
+    # Plot threshold
+    plt.plot([min(t), max(t)], [thresh, thresh], '--')
+    plt.plot([min(t), max(t)], [-thresh, -thresh], '--')
 
-aorg["seed_schedule"] = strVal.strip(",")
+    # Plot peaks (red) and valleys (blue)
+    plt.plot(t[peak_idx], series[peak_idx], 'r.')
+    plt.plot(t[valley_idx], series[valley_idx], 'b.')
 
-aorgOut = json.dumps(aorg, indent=4)
+    peaks = len(series[peak_idx])
+    valleys = len(series[valley_idx])
 
+    return peaks,valleys
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-# [Rebuild "rotation_3d_z" --------------------------------------------------------------------------------------
-# ^ Get current onbjecty
-sch_list = splitEmbList(aorg["rotation_3d_z"])
-
-# ^ Get total number of frames
-max_frames = aorg["max_frames"]
-# ^ Get prompt keyframs
-prompts = aorg["prompts"]
-promptFrames = []
-for key in prompts:
-    promptFrames.append(int(key))
-# pprint(promptFrames)
-# exit()
-
-# ^ make new element list
-newList = []
-
-rotVal = 1
-# for frameNum in promptFrames:
-for i in range(max_frames):
-    newList.append([i, rotVal])
-    # ^ increment seed
-    rotVal += 1
-# pprint(newList)
-
-"""
-rotation_3d_z need to look like:  
-    0: ((sin(((t*2)*3.14)/180)*2))
-or
-    "0:(0.0), 1:(0.1), 3:(0.2), 4:(0.3)"    
-"""
-
-# ^ Make vals
-
-# def tryit(kwargs,arg,default):
-#     try:
-#         rs = kwargs[arg]
-#     except:
-#         rs = default
-#     return rs
 def normcurve(xAxis,**kwargs):
     cycles = p.tryit(kwargs,"cycles",0)
     amin = p.tryit(kwargs,"min",0)
@@ -238,7 +188,7 @@ def normcurve(xAxis,**kwargs):
 
     return strVal, finalAry
 
-def modcurve(ary):
+def modcurve(ary, xlabel,ylabel):
     # ^ Add a little bit of randomness to the values in the array
     for i in range(len(ary)):
         ary[i][1] = random.uniform(ary[i][1] * 1, ary[i][1] * 1.618)
@@ -256,7 +206,9 @@ def modcurve(ary):
 
     # ^ show the arrat
     plt.plot(xdat, y_smooth)
-    plt.show()
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # plt.show()
 
     # ^ remergde into list or lists
     for i in range(len(ary)):
@@ -270,8 +222,9 @@ def modcurve(ary):
 
     return strVal, ary
 
-def rndcurve(ary):
+def rndcurve(ary,xlabel,ylabel,limits):
     # ^ Add a little bit of randomness to the values in the array
+    # for i in range(len(ary)):
     # for i in range(len(ary)):
     #     ary[i][1] = random.uniform(ary[i][1] * 1, ary[i][1] * 1.618)
 
@@ -294,12 +247,23 @@ def rndcurve(ary):
     y_smooth = uniform_filter1d(ydat, size=100)
 
     # ^ normalize to a range... needs both to return correct array size
+    # limits = 5
+    thresh=limits/3
+
+    #^ check for poeaks and valleys
+
+    # plt.show()
     y_smooth = p.normalize(y_smooth)
-    y_smooth = p.np_normalize(np.array(y_smooth), -5, 5)
+    y_smooth = p.np_normalize(np.array(y_smooth), limits * -1, limits)
+    peaks,valleys = findPV(y_smooth,thresh)
+
 
     # ^ show the arrat
-    plt.plot(xdat, y_smooth)
-    plt.show()
+    # plt.plot(xdat, y_smooth)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+
+    # plt.show()
 
     # ^ remergde into list or lists
     for i in range(len(ary)):
@@ -311,7 +275,7 @@ def rndcurve(ary):
     for s in ary:
         strVal += f"{s[0]}:({round(s[1]*10)/10}),"
 
-    return strVal, ary
+    return strVal, ary, peaks,valleys
 
 def rot_3d_z_jittery_left(newlist):
     """
@@ -333,34 +297,142 @@ def rot_3d_z_jittery_left(newlist):
     return strVal
 
 
-# def newrot3d(newList):
-#     """
-#     create a slightly jittery rotation that tends to the left
-#     """
-#     i = 0
-#     newZary =
-#     strVal = ""
-#     while i < len(newList):
-#         amin = -5
-#         amax = 5
-#         ri = random.randint(amin, amax)
-#         newZary.append([i, p.cycle_in_range(amin, amax, ri) / 10])
-#         i += 1
-#
-#     for s in newZary:
-#         strVal += f"{s[0]}:({s[1]}),"
-#
-#     return strVal
+# [Rebuild "seed_scheduler" ---------------------------------------------------------------------------------------------
 
+# ^ Get current onbject
+# sch_list = splitEmbList(aorg['sampler_schedule'])
 
-# strVal = rot_3d_z_jittery_left(newList)
-strVal, finalAry = normcurve(newList, cycles=3,min=-6,max=6)
-# strVal, finalAry = modcurve(finalAry)
-strVal, finalAry = rndcurve(finalAry)
-# print(strVal)
+# ^ Get total number of frames
+max_frames = aorg["max_frames"]
+# ^ Get prompt keyframes
+prompts = aorg["prompts"]
+promptFrames = []
+for key in prompts:
+    promptFrames.append(int(key))
+# pprint(promptFrames)
 # exit()
-aorg["rotation_3d_z"] = strVal.strip(",")
+
+# ^ make new element list
+newList = []
+
+seedVal = 1
+# for frameNum in promptFrames:
+for i in range(max_frames):
+    newList.append([i, seedVal])
+    # ^ increment seed
+    seedVal += 1
+# pprint(newList)
+
+"""
+seed_schedule need to look like:  
+    "0:(s), 1:(-1), \"max_f-2\":(-1), \"max_f-1\":(s)"
+or
+    "0:(1), 1:(2), 3:(3), 4:(4)"    
+"""
+
+# ^ Make vals
+strVal = ""
+for s in newList:
+    strVal += f"{s[0]}:({s[1]}),"
+
+aorg["seed_schedule"] = strVal.strip(",")
+
 aorgOut = json.dumps(aorg, indent=4)
 
+
 # ----------------------------------------------------------------------------------------------------------------------
+
+def findCurve(sch_list,limits,field):
+    # ^ Get total number of frames
+    max_frames = aorg["max_frames"]
+    # ^ Get prompt keyframs
+    prompts = aorg["prompts"]
+    promptFrames = []
+    for key in prompts:
+        promptFrames.append(int(key))
+    # pprint(promptFrames)
+    # exit()
+
+    # ^ make new element list
+    newList = []
+
+    rotVal = 1
+    # for frameNum in promptFrames:
+    for i in range(max_frames):
+        newList.append([i, rotVal])
+        # ^ increment seed
+        rotVal += 1
+    # pprint(newList)
+
+    """
+    rotation_3d_z need to look like:  
+        0: ((sin(((t*2)*3.14)/180)*2))
+    or
+        "0:(0.0), 1:(0.1), 3:(0.2), 4:(0.3)"    
+    """
+
+    # ^ Make vals
+
+    # limits = 4
+    # strVal = rot_3d_z_jittery_left(newList)
+    strVal, finalAry = normcurve(newList, cycles=3,min=limits*-1,max=limits)
+
+
+    # strVal, finalAry = modcurve(finalAry)
+    strVal, finalAry,peaks,valleys = rndcurve(finalAry,"Frame Number",field,limits)
+    # print(strVal)
+    # exit()
+    return strVal,finalAry,peaks,valleys
+
+# [Rebuild "rotation_3d_z" --------------------------------------------------------------------------------------
+field ="rotation_3d_z"
+found = False
+
+minpeaks = 3
+minvalleys=3
+
+while found == False:
+    strVal,finalAry,peaks,valleys = findCurve(splitEmbList(aorg[field]),4,field)
+    # p.errprint(f"({peaks},{valleys})... searching for peaks and valleys >= {4/3}")
+    # if peaks in [2,3,4] and valleys in [2,3,4]:
+    if peaks >= minpeaks and valleys >= minvalleys:
+        found = True
+        p.errprint(f"rotation_3dz: {peaks}/{valleys}")
+
+aorg[field] = strVal.strip(",")
+aorgOut = json.dumps(aorg, indent=4)
+
+
+# # [Rebuild "rotation_3d_y" --------------------------------------------------------------------------------------
+field ="rotation_3d_y"
+found = False
+
+while found == False:
+    strVal,finalAry,peaks,valleys = findCurve(splitEmbList(aorg[field]),1,field)
+    # p.errprint(f"({peaks},{valleys})... searching for peaks and valleys >= {4/3}")
+    # if peaks in [2,3,4] and valleys in [2,3,4]:
+    if peaks >= minpeaks and valleys >= minvalleys:
+        found = True
+        p.errprint(f"rotation_3dy: {peaks}/{valleys}")
+
+aorg[field] = strVal.strip(",")
+aorgOut = json.dumps(aorg, indent=4)
+
+
+
+# # [Rebuild "rotation_3d_x" --------------------------------------------------------------------------------------
+field ="rotation_3d_x"
+found = False
+
+while found == False:
+    strVal,finalAry,peaks,valleys = findCurve(splitEmbList(aorg[field]),1,field)
+    # p.errprint(f"({peaks},{valleys})... searching for peaks and valleys >= {4/3}")
+    # if peaks in [2,3,4] and valleys in [2,3,4]:
+    if peaks >= minpeaks and valleys >= minvalleys:
+        found = True
+        p.errprint(f"rotation_3dx: {peaks}/{valleys}")
+
+aorg[field] = strVal.strip(",")
+aorgOut = json.dumps(aorg, indent=4)
+
 print(aorgOut)

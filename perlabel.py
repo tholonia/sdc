@@ -24,6 +24,7 @@ def showhelp():
     -i, --id          ID number
     -d, --dir     directory
     -s  --settingsfile
+    -t  --tmpdir
 '''
     print(rs)
     exit()
@@ -37,11 +38,12 @@ tmpdir = "/tmp/images"
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hi:d:s:", [
+    opts, args = getopt.getopt(argv, "hi:d:s:t:", [
         "help",
         "id=",
         "dir=",
         "settings=",
+        "tmpdir=",
     ])
 except Exception as e:
     print(str(e))
@@ -54,6 +56,8 @@ for opt, arg in opts:
         srcfile_dir = arg
     if opt in ("-s", "--settings"):
         settings_file = arg
+    if opt in ("-t", "--tmpdir"):
+        tmpdir = arg
 
 
 print(f"dir: {srcfile_dir}")

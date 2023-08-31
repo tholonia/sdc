@@ -50,6 +50,7 @@ for opt, arg in opts:
         # print(filepath,filename)
     if opt in ("-l", "--label"):
         label = arg
+        print(f"[{label}]")
 def clean():
     if os.path.exists(f"/tmp/splits"):
         os.system("rm -rf /tmp/splits")
@@ -59,12 +60,12 @@ def modify(filepath,filename,label,fontsize):
     if filepath == "":
         filepath = "."
     # cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(h-text_h) -codec:a copy /tmp/outlabel.mp4"
-    cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text={label}:fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(text_h) -codec:a copy /tmp/outlabel.mp4"
+    cmd = f"ffmpeg -loglevel info   -y -i {filepath}/{filename}  -vf drawtext=fontfile=/usr/share/fonts/noto/NotoSerif-Black.ttf:text='{label}':fontcolor=white:fontsize={fontsize}:box=1:boxcolor=black@1.0:boxborderw=5:x=(w-text_w)/2:y=(text_h) -codec:a copy /tmp/outlabel.mp4"
     p.prun(cmd,debug=debug)
 def update():
-    cmd = f"mv {filepath}/{filename} /tmp/{filename}.BAK"
+    cmd = f"cp {filepath}/{filename} /tmp/{filename}.BAK"
     os.system(cmd)
-    cmd = f"mv /tmp/outlabel.mp4 {filepath}/{filename}"
+    cmd = f"cp /tmp/outlabel.mp4 {filepath}/{filename}"
     os.system(cmd)
     print(Fore.YELLOW+f"FINISHED: {filename}"+Fore.RESET)
 
@@ -78,7 +79,7 @@ if not label:
 print(f"Probing: {filepath}/{filename}")
 probe = ffmpeg.probe(f"{filepath}/{filename}")
 video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
-fontsize = int(video_streams[0]['coded_width']/15)
+fontsize = int(video_streams[0]['coded_width']/30)
 # print(Fore.CYAN+f"modifying files..."+Fore.RESET)
 modify(filepath,filename,label,fontsize)
 update()

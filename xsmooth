@@ -1,0 +1,77 @@
+#!/bin/bash -x
+
+if [ "$1" = "" ]; then
+  cat << EOF
+  Missing parameter 1:
+    arg1 = <full path name> (required)
+    arg2 = "-d"  debug on (optional)
+EOF
+  exit
+fi
+DEBUG=""
+if [ "$2" == "-d" ]; then
+  DEBUG=$2
+fi
+W=""
+if [ "$3" == "W" ]; then
+  W=$3
+fi
+
+# xsmooth fullpath.mp4 -d W
+
+SAVE="TRUE"
+
+
+makeauto.py -v $1                 -Q E${W}TIS -V 2 -K 2 -X 8 ${DEBUG} -A
+
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K2X8.avi
+fi
+#makeauto.py -v $1                 -Q ETIS -V 2 -K 2 -X 8 ${DEBUG} -A
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 3 -X 7 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K3X7.avi
+fi
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 4 -X 6 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K4X6.avi
+fi
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 5 -X 5 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K5X5.avi
+fi
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 6 -X 4 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K6X4.avi
+fi
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 7 -X 3 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K2X3.avi
+fi
+makeauto.py -v /fstmp/stitched.avi  -Q ETIS -V 2 -K 8 -X 2 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_K8X2.avi
+fi
+makeauto.py -v /fstmp/stitched.avi   -Q EIS -V 2 -X 6 ${DEBUG} -A
+if [ "${SAVE}" = "TRUE" ]
+then
+  cp /fstmp/stitched.avi /fstmp/stitched_X6.avi
+fi
+
+ffmpegC -y -loglevel warning -hwaccel_output_format cuda -i /fstmp/stitched.avi  -vcodec hevc_nvenc /fstmp/stitched.mp4
+
+
+
+#ffmpeg -loglevel warning -i /tmp/stitched.mp4 -r 15/1 /tmp/images/%05d.png
+#toss.py -v /tmp/images -k 4
+#mv /tmp/filtered/* /tmp/images/
+#/home/jw/src/rife/interpV2.py --ext png --input /tmp/images/ --output /tmp/frames/ --buffer 0 --multi 5 --change 0.01 --model /home/jw/src/rife/rife/flownet-v46.pkl
+#ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i /tmp/frames/*.png -c:v libx264 -pix_fmt yuv420p  /tmp/out_1688765397.mp4
+#cp /tmp/out_1688765397.mp4 /tmp/stitched.mp4

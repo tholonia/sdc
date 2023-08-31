@@ -7,9 +7,108 @@ https://www.youtube.com/watch?v=Ep4T8fyy2LE
 
 
 
+## Convert (imagemagick/ffmpeg)
+Resise to width keeing the height proportional
+`mogrify -resize 768x *.gif`
+
+Remove all empty space around image
+`for f in *.gif; do echo $f; convert $f -flatten -fuzz 1% -trim +repage $f; done`
+
+rescale (use ffmpeg to use CUDA)
+
+`for f in *.gif; do echo $f; ffmpeg -y -loglevel warning -i $f -vf scale=-1:512 out_$f ; done`
+
+fill out
+
+`for f in ./img*.png; do echo $f;convert $f  -resize 768x512 -background black -gravity center -extent 768x512 $f ; done`
+
+
+convert while ot trans to black
+
+mogrify -background black -alpha background -alpha off -negate -transparent white *.gif 
+
+
+`??`
+
+for f in ./*.png; do echo $f;convert $f -fuzz 45% -transparent black $f ; done
+
+
+
+
+## pacman
+
+reinstall ffmpeg, first uninstall with 
+```
+sudo pacman -Rdd ffmpeg
+```
+
+
+
 # ffmpeg examples
 
+
+
+## AVI to MP4
+
+
+
+```html
+ffmpeg -i input.avi -c:v libx264 -preset slow -crf 19 -c:a libvo_aacenc -b:a 128k
+```
+
+## Fix dark image
+
+https://ffmpeg.org/pipermail/ffmpeg-user/2019-March/043686.html
+
+`ffplay -loglevel panic -i stitched.mp4 -vf "lutyuv=y=val*1.9"`
+
+or
+
+- create lookup table from image: (make copy of image as this overwrites the original)
+
+- apply to video
+
+
+
+- `convert hald:2 lut.png`
+
+- `ffmpeg -i in.mp4 -vf "movie=lut.png, [in] haldclut" -crf 19 out_lut.mp4`
+
+- `ffmpeg -i in.mp4 -vf eq=gamma=1.1:contrast=1.03:brightness=0.01:saturation=1.2 -crf 19 out_lut_adj.mp4`
+
+### Retime videos to be the same length
+
+with sound
+```
+ ffmpeg -i /fstmp/stitched.avi -filter_complex "setpts=PTS/(120/30);atempo=78.000/30" output.avi
+```
+without sound
+```
+ ffmpeg -i IN.mp4 -filter_complex "setpts=PTS/(120/30)" OUT.mp4
+```
+where 120 mand 30 are teh duration in secs
+
+
+
+
+Use with ` -vcodec hevc_nvenc `
+
+### Get FPS
+```
+ffmpeg -i /fstmp/stitched.avi 2>&1 | sed -n "s/.*, \(.*\) fp.*/\1/p"
+
+ffprobe -v 0 -of csv=p=0 -select_streams v:0 -show_entries stream=r_frame_rate /fstmp/stitched.avi
+```
+
+### Contrast,Gamma,etc
+
+```
+ffmpeg -i IN.mp4-filter_complex "[0:v]eq=contrast=1:brightness=0:saturation=1:gamma=1:
+gamma_r=1:gamma_g=1:gamma_b=1:gamma_weight=1[outv]" OUT.mp4
+```
+
 ### Crop
+
 to square 720x720 from x=280,y=0
 
 ```
@@ -68,6 +167,10 @@ ffmpeg -i input.mp4 -lavfi '[0:v]scale=ih*16/9:-1,boxblur=luma_radius=min(h\,w)/
 ```
 ffmpeg -i output.mp4 -s 512x512! -c:a copy output512.mp4
 ```
+To resize withotu loosing quality in an AVI, need to add `-c:v huffyuv -pix_fmt yuv422p`
+```
+ffmpeg -i /fstmp/stitched.avi -filter_complex "setpts=PTS*1" -c:v huffyuv -pix_fmt yuv422p /fstmp/output.avi
+```
 
 ### Extract frames (for 360 frames from a 17:11 min video)
 ```
@@ -78,6 +181,8 @@ ffmpeg -i  input.mp4  -r 15/1 %09d.png
 ### Get n secods of video
 
 ```
+ffmpeg -ss [start] -i in.mp4 -t [duration] -map 0 -c copy out.mp4
+
 ffmpeg -t 30 -i inputfile.mp3 -acodec copy outputfile.mp3
 ```
 
@@ -117,6 +222,11 @@ ffmpeg -i originalVideo.mp4 -vf reverse reversedVideo.mp4
 ffmpeg -framerate 15 -pattern_type glob -i '*.png'  -c:v libx264 -pix_fmt yuv420p out.mp4 
 ```
 
+lossless
+
+```
+ ffmpeg -framerate 15 -pattern_type glob -i '*.png'  -c:v huffyuv  -pix_fmt yuv422p out.avi
+```
 
 ### Extract frames from videos
 
@@ -178,6 +288,8 @@ cd /home/jw/src/rife/
 ### BASH 'for' loop
 ```
 for i in `seq 1000000`; do echo `ls -1 -t *.png |head -1`;cp `ls -1 -t *.png |head -1` .last.png;sleep 5; done
+
+for f in ./*.c; do echo "Processing $f file..."; done
 ```
 
 

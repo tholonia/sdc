@@ -35,7 +35,7 @@ def errprint(str):
     print(str, file=sys.stderr)
 
 
-# ^ define finctions
+#^ define finctions
 def aorgUp(key, val):
     global aorg
     if key not in xkeys:
@@ -102,9 +102,9 @@ def showhelp():
     exit()
 
 
-# [                               MAIN                                       ]
+#[                               MAIN                                       ]
 
-# - defaults
+#- defaults
 count = 10
 mult = 10
 sample_offset = round(mult/3)
@@ -255,7 +255,12 @@ for i in range(1, count + 1):
 prelist = []
 for i in range(count):
     pair = pairs[i]
-    newpre = r(g.pre, lastr=lastpre, idx=i)
+
+
+    newpre = r(g.pre, lastr=lastpre, idx=i)  #^ for technical
+    # newpre = r(g.artists, lastr=lastpre, idx=i) #^ for artists
+
+
     newadj = r(g.adj, lastr=lastadj, idx=i)
     newverbs = r(g.verbs, lastr=lastverbs, idx=i)
     newplaces = r(g.places, lastr=lastplaces, idx=i)

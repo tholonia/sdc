@@ -10,7 +10,7 @@ import shutil
 import json
 import getopt, sys
 from colorama import init, Fore, Back
-from proclib import prun, cleanTree, cleanWildcard, getId, normalize, Diff_img, runExtract, runInterp, runStitch
+from proclib import prun, cleanTree, cleanWildcard, getID, normalize, Diff_img, runExtract, runInterp, runStitch
 import procvars as g
 init()
 
@@ -107,8 +107,8 @@ if os.path.exists(f"{dir}/rsAry.json"):
 
 # make sure there is a directory for filtering abd backup
 
-# cleanTree(f"{g.tmpdir}/filtered")
-# cleanTree(f"{g.tmpdir}/tossed")
+cleanTree(f"{g.tmpdir}/filtered")
+cleanTree(f"{g.tmpdir}/tossed")
 
 rsAry = []  # ^ array that hols filenames and diffs
 nAry = []  # ^ just for diffs
@@ -147,13 +147,13 @@ if keep != False:
     for item in rsAry:
         if i%keep!=0:
             if os.path.exists(item[1]):
-                print(Fore.RED+f"Keep Tossed: {item[1]} to {g.tmpdir}/tossed"+Fore.RESET)
+                print(Fore.RED+f"Keep Tossed: {item[1]} to {g.tmpdir}/tossed"+Fore.RESET,end="\r")
                 cmd=f"cp {item[1]} {g.tmpdir}/tossed"
                 prun(cmd,debug=debug)
                 # shutil.copy(item[1], f"{g.tmpdir}/tossed")
                 fcount +=1
         else:
-            print(Fore.GREEN + f"Keep Filtered: {item[1]} to {g.tmpdir}/filtered" + Fore.RESET)
+            print(Fore.GREEN + f"Keep Filtered: {item[1]} to {g.tmpdir}/filtered" + Fore.RESET,end="\r")
             cmd = f"cp {item[1]} {g.tmpdir}/filtered"
             prun(cmd, debug=debug)
             # shutil.copy(item[1], f"{g.tmpdir}/filtered")

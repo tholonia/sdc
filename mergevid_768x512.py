@@ -25,7 +25,7 @@ def showhelp():
     -D, --destdir           directory
     -r, --rename           rename
     -v, --verbose
-    -R, --res           resolution n (nxn)
+    -R, --res           resolution n (XXXxYYY)
 '''
     print(rs)
     exit()
@@ -34,7 +34,8 @@ filespec = False
 destdir = False
 rename = False
 verbose = "-loglevel warning"
-resolution = 512
+resolution_x = 768
+resolution_y = 512
 
 argv = sys.argv[1:]
 try:
@@ -63,7 +64,9 @@ for opt, arg in opts:
     if opt in ("-v", "--verbose"):
         verbose = "-loglevel info"
     if opt in ("-R", "--resolution"):
-        resolution = int(arg)
+        pts = arg.split("x")
+        resolution_x = int(arg[0])
+        resolution_y = int(arg[1])
 
 
 
@@ -89,28 +92,28 @@ def merge_h(width,vids,count):
     pprint(vids)
 
     #! check res to make sure this is a square, otherwise resize
-    for v in vids:
-        print(Fore.MAGENTA+f"VIDEO {v}"+Fore.RESET)
-        probe = ffmpeg.probe(v)
-        video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
-        # pprint(video_streams[0]['coded_width'])
-        if video_streams[0]['coded_width'] != video_streams[0]['coded_height']:
-            print(Fore.MAGENTA + f"Adjusting square dimensions for {v}" + Fore.RESET)
-
-            cmd = f"ffmpeg -y {verbose} -i {v} -r 15 -s {video_streams[0]['coded_width']}x{video_streams[0]['coded_width']} -an /tmp/outx.mp4"
-            prun(cmd)
-            cmd = f"mv /tmp/outx.mp4 {v}"
-            prun(cmd)
-        else:
-            print(Fore.MAGENTA+f"Square Dimensions OK for {v}"+Fore.RESET)
+    # for v in vids:
+    #     print(Fore.MAGENTA+f"VIDEO {v}"+Fore.RESET)
+    #     probe = ffmpeg.probe(v)
+    #     video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
+    #     # pprint(video_streams[0]['coded_width'])
+    #     if video_streams[0]['coded_width'] != video_streams[0]['coded_height']:
+    #         print(Fore.MAGENTA + f"Adjusting square dimensions for {v}" + Fore.RESET)
+    #
+    #         cmd = f"ffmpeg -y {verbose} -i {v} -r 15 -s {video_streams[0]['coded_width']}x{video_streams[0]['coded_width']} -an /tmp/outx.mp4"
+    #         prun(cmd)
+    #         cmd = f"mv /tmp/outx.mp4 {v}"
+    #         prun(cmd)
+    #     else:
+    #         print(Fore.MAGENTA+f"Square Dimensions OK for {v}"+Fore.RESET)
 
         #! now make sure is 512x512
-        if video_streams[0]['coded_width'] != resolution:
-            print(Fore.MAGENTA + f"Resizing to {resolution}x{resolution} for {v}" + Fore.RESET)
-            cmd = f"ffmpeg -y {verbose} -i {v}  -s 512x512 -c:a copy /tmp/outxa.mp4"
-            prun(cmd)
-            cmd = f"mv /tmp/outxa.mp4 {v}"
-            prun(cmd)
+        # if video_streams[0]['coded_width'] != resolution:
+        #     print(Fore.MAGENTA + f"Resizing to {resolution}x{resolution} for {v}" + Fore.RESET)
+        #     cmd = f"ffmpeg -y {verbose} -i {v}  -s 512x512 -c:a copy /tmp/outxa.mp4"
+        #     prun(cmd)
+        #     cmd = f"mv /tmp/outxa.mp4 {v}"
+        #     prun(cmd)
 
     cmd = f"ffmpeg -y {verbose} "
     for vid in vids:
@@ -207,8 +210,8 @@ if num_of_vids == 12:
     f4 = merge_v([f1, f2, f3])
 
 if rename:
-    print(f"MOVING: /tmp/merged.mp4 -> {destdir}/{resolution}_{rename}")
-    os.system(f"mv /tmp/merged.mp4 {destdir}/{resolution}_{rename}")
+    print(f"MOVING: /tmp/merged.mp4 -> {destdir}/{resolution_x}_{rename}")
+    os.system(f"mv /tmp/merged.mp4 {destdir}/{resolution_x}_{rename}")
 
 cleanpost()
 

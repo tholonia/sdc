@@ -26,14 +26,17 @@ def tryit(kwargs,arg,default):
 def prun(cmd, **kwargs):
     debug = tryit(kwargs,'debug',False)
 
+    scmd = cmd.split()
+    for i in range(len(scmd)):
+        scmd[i] = scmd[i].replace("~"," ")
     if debug:
         # print("\n"+'──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────')
         print(Fore.YELLOW +">>> "+ cmd + Fore.RESET)
-    scmd = cmd.split()
+        # pprint(scmd)
     if debug:
-        process = subprocess.Popen(scmd)
+        process = subprocess.Popen(scmd) #, shell=True)
     else:
-        process = subprocess.Popen(scmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        process = subprocess.Popen(scmd, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT) #, shell=True)
     process.wait()
     # rs = subprocess.call(scmd)
     # rs = subprocess.check_call(scmd)
@@ -115,6 +118,26 @@ def cleanWildcard(w):
             os.remove(file)
     except:
         pass
+    errprint(f"cleanWildcard({w})")
+
+def cleanTree2(tdir,**kwargs):
+    errprint(f"cleanTree2({tdir})")
+    #^first del all dirs
+    makedir = tryit(kwargs,"makedir",False)
+    nodes = os.listdir(tdir)
+    for node in nodes:
+        try:
+            cmd = f"/bin/rm -rf {tdir}/{node}"
+            print(f"\t{cmd}")
+            prun(cmd)
+            # shutil.rmtree(node)
+        except Exception as e:
+            print(e)
+            exit()
+
+    if makedir != False:
+        os.mkdir(f"{tdir}/{makedir}")
+
 def cleanTree(tdir):
     try:
         shutil.rmtree(tdir)
@@ -126,13 +149,19 @@ def cleanTree(tdir):
     except Exception as e:
         # print(e)
         pass
-    os.mkdir(tdir)
+    os.makedirs(tdir)
+    errprint(f"cleanTree({tdir})")
+def killTrees(d):
+    files = glob.glob(d)
+    for f in files:
+        # print(f"deleting {f}")
+        print(f"Killing tree {f}")
+        shutil.rmtree(f)
 def cleanAll(d):
     nfiles = len(glob.glob(f"{d}/**/*", recursive=True))
     print(f"Cleaning {nfiles} file from {d}")
     cleanTree(d)
-def cleanTrash():
-    d = '/home/jw/.local/share/Trash/**/*'
+def cleanTrash(d):
     try:
         files = glob.glob(d, recursive=True)
         nfiles = len(files)
@@ -141,43 +170,39 @@ def cleanTrash():
         for f in files:
             f.replace(" ","\\ ")
             f.replace("\(","\\(")
-            cmd = f"rm -rf {f}"
-            # print(cmd)
+            cmd = f"rm -rf '{f}'"
+            print(Fore.YELLOW + ">>>" + cmd + Fore.RESET)
             os.system(cmd)
     except:
         pass
 
-    d = '/run/user/1000/kio-fuse-jnwddn/trash/**/*'
-    try:
-        files = glob.glob(d, recursive=True)
-        nfiles = len(files)
-        # pprint(files)
-        print(f"Cleaning {nfiles} file from {d}")
-        for f in files:
-            cmd = f"rm -rf {f}"
-            # print(cmd)
-            os.system(cmd)
-    except:
-        pass
 #[SUBRPOCESS Routines                                          ]
-def runExtract(filename,**kwargs):
+def runExtract(filename,**kwargs): #-> location
     debug = tryit(kwargs,'debug',False)
-    # try:
-    #     debug = kwargs['debug']
-    # except:
-    #     debug = False
+    fps = tryit(kwargs,'fps',g.fps)
+    destfolder =  f"{g.tmpdir}/images"
 
     cleanTree(f"{g.tmpdir}/images")
     cleanTree(f"{g.tmpdir}/frames")
     timeStart = time.time()
-    print(Fore.GREEN+f"Extracting images from {filename} to {g.tmpdir}/images"+Fore.RESET,end="",flush=True)
-    cmd = f"ffmpeg -loglevel warning -i {filename} -r 15/1 {g.tmpdir}/images/%05d.png"
+    print(Fore.GREEN+f"Extracting images from {filename} to {destfolder}"+Fore.RESET,flush=True)
+    # cmd = f"ffmpegC -loglevel warning -hwaccel_output_format cuda  -i {filename} -vcodec hevc_nvenc -r {fps}/1 {destfolder}/%05d.png"
+    cmd = f"ffmpegC -loglevel warning -i {filename} -r {fps}/1 {destfolder}/%05d.png"
+
     #cmd_2 = f"ffpb -i {srcfile} -r 15/1 {args['tmpdir']}/images/%05d.png"
     prun(cmd,debug=debug)
-    fct = glob.glob(f"{g.tmpdir}/images/*")
-    print(f"   ({procTime(timeStart)}), {len(fct)} images")
-    return f"{g.tmpdir}/images"
-def runToss(location,tossFilter,**kwargs):
+    fct = glob.glob(f"{destfolder}/*.png")
+    print(f"  TIME Extract: ({procTime(timeStart)}), {len(fct)} images")
+
+    #^ save file count
+    count = len(fct)
+    countFile = open("/tmp/count.json","w")
+    countFile.write(json.dumps(count))
+    countFile.close()
+
+
+    return destfolder
+def runToss(location,tossFilter,**kwargs):#-> location
     debug = tryit(kwargs,'debug',False)
     keep = tryit(kwargs,'keep',False)
 
@@ -185,15 +210,16 @@ def runToss(location,tossFilter,**kwargs):
     cleanTree(f"{g.tmpdir}/tossed")
 
     timeStart = time.time()
-    print(Fore.GREEN+f"Tossing similar frames in {g.tmpdir}/images"+Fore.RESET,end="",flush=True)
+    print(Fore.GREEN+f"Tossing similar frames in {g.tmpdir}/images"+Fore.RESET,flush=True)
 
     # cmd = f"toss.py -v {location} -f {tossFilter}"
+
     cmd = f"toss.py -v {location} -k {keep}"
     prun(cmd,debug=debug)
 
 
     fct = glob.glob(f"{g.tmpdir}/images/*")
-    print(f"   ({procTime(timeStart)}), {len(fct)} images")
+    print(f"TIME Toss:  ({procTime(timeStart)}), {len(fct)} images")
 
     totalFiles = len(glob.glob(f"{g.tmpdir}/images/*.png"))
     filtered = len(glob.glob(f"{g.tmpdir}/filtered/*.png"))
@@ -207,19 +233,20 @@ def runToss(location,tossFilter,**kwargs):
         print(e)
         pass
     #^ mv filtered frames ti /tmp/images where interpolatio expects to find them,
-    cleanTree(f"{g.tmpdir}/frames")
-    cmd = f"mv {g.tmpdir}/filtered/* {g.tmpdir}/frames/"
+    cleanTree(f"{g.tmpdir}/images")
+    cmd = f"mv {g.tmpdir}/filtered/* {g.tmpdir}/images/"
+    print(Fore.YELLOW+">>>"+cmd+Fore.RESET)
     os.system(cmd)
     return f"{g.tmpdir}/filtered", pctTossed, totalFiles, filtered, tossed
-def runInterp(interpx,**kwargs):
+
+def runInterp(interpx,**kwargs):#-> location
     debug = tryit(kwargs,'debug',False)
     version = tryit(kwargs,'version',1)
 
     cleanTree(f"{g.tmpdir}/frames")
 
-
     timeStart = time.time()
-    print(Fore.GREEN+f"Interpolating images from {g.tmpdir}/images to {g.tmpdir}/frames"+Fore.RESET,end="",flush=True)
+    print(Fore.GREEN+f"Interpolating images from {g.tmpdir}/images to {g.tmpdir}/frames"+Fore.RESET,flush=True)
     cmd = False
     if version == 1:
         cmd = f"{g.rifedir}/interpolate.py --input {g.tmpdir}/images/ --output {g.tmpdir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.rifedir}/rife/flownet-v46.pkl"
@@ -227,84 +254,118 @@ def runInterp(interpx,**kwargs):
         cmd = f"{g.rifedir}/interpV2.py --ext png --input {g.tmpdir}/images/ --output {g.tmpdir}/frames/ --buffer 0 --multi {interpx} --change 0.01 --model {g.rifedir}/rife/flownet-v46.pkl"
 
     prun(cmd,debug=debug)
-    print(f"   ({procTime(timeStart)})")
+    print(f"   TIME Interpolation: ({procTime(timeStart)})")
     totalImg = len(glob.glob(f"{g.tmpdir}/frames/*"))
     return f"{g.tmpdir}/frames", totalImg
-def runStitch(dirname, **kwargs):
+
+def runStitch(dirname, **kwargs):#[-> filename
     debug = tryit(kwargs,'debug',False)
     version = tryit(kwargs,'version',1)
+    vext = tryit(kwargs,'ext',"mp4")
 
     #^ what kind of files?
-    imgs = glob.glob(f"{dirname}/*.png")
+    # imgs = glob.glob(f"{dirname}/*.png")
 
     ext = "jpg"
     if version == 2:
         ext = "png"
 
     timeStart = time.time()
-    print(Fore.GREEN+f"Stitching images in {dirname}"+Fore.RESET,end="",flush=True)
-    cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {dirname}/*.{ext} -c:v libx264 -pix_fmt yuv420p  {g.tmpdir}/out_{g.uid}.mp4"
+    print(Fore.GREEN+f"Stitching images in {dirname}"+Fore.RESET,flush=True)
+    # cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {dirname}/*.{ext} -c:v libx264 -pix_fmt yuv420p  {g.tmpdir}/out_{g.uid}.mp4"
+    # cmd = f"ffmpeg -y -loglevel warning -framerate 15 -pattern_type glob -i {dirname}/*.{ext} -c:v huffyuv -pix_fmt yuv420p  {g.tmpdir}/out_{g.uid}.{vext}"
+    pix = "yuv420p"
+    fmt = "libx264"
+    if vext=="avi":
+        pix = "yuv422p"
+        fmt = "huffyuv"
+    # cmd = f"ffmpeg -y -loglevel warning -framerate 15 -i {dirname}/%06d.{ext} -c:v {fmt} -pix_fmt {pix}  {g.tmpdir}/out_{g.uid}.{vext}"
+    cmd = f"ffmpegC -y -loglevel warning -hwaccel_output_format cuda  -framerate {g.fps} -i {dirname}/%06d.{ext}  -vcodec hevc_nvenc -c:v {fmt} -pix_fmt {pix}  {g.tmpdir}/stitched.{vext}"
     prun(cmd,debug=debug)
-    fs = getFilesize(f"{g.tmpdir}/out_{g.uid}.mp4")
-    print(f"   ({procTime(timeStart)}), {fs}")
-    cmd = f"cp {g.tmpdir}/out_{g.uid}.mp4 {g.tmpdir}/stitched.mp4"
-    prun(cmd,debug=debug)
+    # fs = getFilesize(f"{g.tmpdir}/out_{g.uid}.{vext}")
+    fs = getFilesize(f"{g.tmpdir}/stitched.{vext}")
+    print(f"TIME Stitch:   ({procTime(timeStart)}), {fs}")
+    # cmd = f"cp {g.tmpdir}/out_{g.uid}.{vext} {g.tmpdir}/stitched.{vext}"
+    # cmd = f"mv {g.tmpdir}/out_{g.uid}.{vext} {g.tmpdir}/stitched.{vext}"
+    # prun(cmd,debug=debug)
 
-    return f"{g.tmpdir}/out_{g.uid}.mp4", f"{g.tmpdir}/stitched.mp4"
-def runPerlabel(filename,**kwargs):
+    # return f"{g.tmpdir}/out_{g.uid}.{vext}", f"{g.tmpdir}/stitched.{vext}"
+    return f"{g.tmpdir}/stitched.{vext}"
+def runPerlabel(filename,**kwargs):#[-> filename
     debug = tryit(kwargs,'debug',False)
+    ext = tryit(kwargs,'ext',"mp4")
+
     cleanTree(f"{g.tmpdir}/images")
     cleanTree(f"{g.tmpdir}/frames")
     id = getID(filename)
     timeStart = time.time()
-    print(Fore.GREEN+f"Labeling images in {filename}"+Fore.RESET,end="",flush=True)
+    print(Fore.GREEN+f"Labeling images in {filename} ({g.tmpdir}/images)"+Fore.RESET,flush=True)
     dirname = os.path.dirname(filename)
     basename = os.path.basename(filename)
-    nameonly = basename.replace(".mp4","")
+    nameonly = basename.replace(f".{ext}","")
 
-    cmd= f"perlabel.py -d {dirname} -i {id} -s {dirname}/{nameonly}_settings.txt"
+    cmd= f"perlabel.py -t {g.tmpdir}/images -d {dirname} -i {id} -s {dirname}/{nameonly}_settings.txt"
     prun(cmd,debug=debug)
-    print(f"   ({procTime(timeStart)})")
-    return f"{g.tmpdir}/labeled_{id}.mp4"
-def runCrop(filename,x,y, **kwargs):
+    print(f"TIME Perlabel:   ({procTime(timeStart)})")
+    return f"{g.tmpdir}/labeled_{id}.{ext}"
+def runCrop(filename,x,y, **kwargs):#[-> filename
     debug = tryit(kwargs,'debug',False)
+    ext = tryit(kwargs,'ext',"mp4")
 
-    # try:
-    #     debug = kwargs['debug']
-    # except:
-    #     debug = False
     fid = getID(filename)
+    outfile = f"{g.tmpdir}/scaled_{g.uid}_{fid}.{ext}"
     timeStart = time.time()
-    print(Fore.GREEN + f"Cropping/Scaling to {x}x{y} (/tmp/scaled_{g.uid}_{fid}.mp4)" + Fore.RESET, end="",flush=True)
+    print(Fore.GREEN + f"Cropping/Scaling to {x}x{y} ({outfile})" + Fore.RESET,flush=True)
     # #^ see https://superuser.com/questions/1474942/ffmpeg-cropping-invalid-too-big-or-non-positive-size-for-width for ewhy these args are so complex
     # cmd = f'ffmpeg -y -loglevel warning -i /tmp/out_{g.uid}.mp4 -vf scale=(iw*sar)*max(2040.1/(iw*sar)\,1150.1/ih):ih*max(2040.1/(iw*sar)\,1150.1/ih),crop=2040:1150 /tmp/scaled_{g.uid}_{fid}.mp4'
-    outfile = f"/tmp/scaled_{g.uid}_{fid}.mp4"
-    cmd = f'ffmpeg -y -loglevel warning -i {filename} -vf scale=(iw*sar)*max({x}.1/(iw*sar)\,{y}.1/ih):ih*max({x}.1/(iw*sar)\,{y}.1/ih),crop={x}:{y} {outfile}'
+    #^ crops to center, allows for minor res movement
+    cmd = f'ffmpegC -y -loglevel warning -hwaccel_output_format cuda -i {filename}  -vcodec hevc_nvenc -vf scale=(iw*sar)*max({x}.1/(iw*sar)\,{y}.1/ih):ih*max({x}.1/(iw*sar)\,{y}.1/ih),crop={x}:{y} {outfile}'
+    # cmd = f'ffmpeg -y -loglevel warning -i {filename} -filter:v crop={x}:{y} {outfile}'
     prun(cmd,debug=debug)
     fs = getFilesize(outfile)
-    print(f"   ({procTime(timeStart)}), {fs}")
+    print(f"TIME Crop:   ({procTime(timeStart)}), {fs}")
     return outfile
-def runUpscale(srcfile, **kwargs):
+def runUpscale(srcfile, **kwargs):#[-> filename
     debug = tryit(kwargs,'debug',False)
-    # try:
-    #     debug = kwargs['debug']
-    # except:
-    #     debug = False
+    ext = tryit(kwargs,'ext',"mp4")
+    #^ wipe the dir
+    files = glob.glob(f"/home/jw/src/Real-ESRGAN/results/*")
+    for f in files:
+        os.remove(f)
 
     timeStart = time.time()
-    print(Fore.GREEN + f"Upscaling 4x ({srcfile})" + Fore.RESET,end="",flush=True)
+    print(Fore.GREEN + f"Upscaling 2x ({srcfile})" + Fore.RESET,flush=True)
     cmd = f'/home/jw/src/sdc/upscale.sh {srcfile}' # > /dev/null 2>&1'
     prun(cmd,debug=debug)
-    dest = f"{g.esgrandir}/results/{os.path.basename(srcfile)}"
-    dest = dest.replace(".mp4","_out.mp4")
-    fs = getFilesize(dest)
-    print(f"   ({procTime(timeStart)}), {fs}")
-    outfile = srcfile.replace(".mp4","_out.mp4")
-    cmd = f"mv /home/jw/src/Real-ESRGAN/results/{os.path.basename(outfile)} {os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
+    #^ upscale automatically names teh file *_out.mp4
+    # destfile = f"{g.esgrandir}/results/{os.path.basename(srcfile)}"
+    # print(f"-------------------------------------------------------------------------{destfile}")
+    # destfile = destfile.replace(f".{ext}",f"_out.{ext}")
+    # print(f"-------------------------------------------------------------------------{destfile}")
+    # #^ upscale only outputs in MP4, so if srcfile is AVI, need to change to MP4
+    # if ext == "avi":
+    #     destfile = destfile.replace(".avi",".mp4")
+    # print(f"-------------------------------------------------------------------------{destfile}")
+    # fs = "missing"
+    # try:fs = getFilesize(destfile)
+    # except Exception as e: print(e)
+
+    files = glob.glob(f"/home/jw/src/Real-ESRGAN/results/*")
+    outfile = files[0]
+
+    print(f"TIME Upscale:   ({procTime(timeStart)})")
+    # if ext=="avi":
+    #     outfile = srcfile.replace(f".avi",f"_out.avi")
+    # else:
+    #     outfile = srcfile.replace(f".mp4", f"_out.mp4")
+    # print(f"--------------------------------------------------------------outfile-----------{outfile}")
+    # cmd = f"mv /home/jw/src/Real-ESRGAN/results/{os.path.basename(outfile)} {os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
+    destfile = f"{os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
+    cmd = f"mv {outfile} {destfile}"
     prun(cmd,debug=True)
 
-    return f"{os.path.dirname(srcfile)}/4x_{os.path.basename(srcfile)}"
-def runFade(filename, **kwargs):
+    return destfile
+def runFade(filename, **kwargs):#[-> filename
     debug = tryit(kwargs,'debug',False)
     # try:
     #     debug = kwargs['debug']
@@ -312,36 +373,42 @@ def runFade(filename, **kwargs):
     #     debug = False
     fid = getID(filename)
     timeStart = time.time()
-    print(Fore.GREEN + f"Fading in/out ({filename})..." + Fore.RESET,end="",flush=True)
+    print(Fore.GREEN + f"Fading in/out ({filename})..." + Fore.RESET,flush=True)
 
     vdurInt, vdur = viduration(filename)
     fadeinTime = 3
     fadeoutTime = 5
     startFout = vdurInt-fadeoutTime
-    cmd = f'ffmpeg -loglevel warning -y -i {filename} -vf fade=t=in:st=0:d={fadeinTime} -c:a copy {g.tmpdir}/fout_{g.uid}.mp4'
+    # cmd = f'ffmpegC -loglevel warning -y -hwaccel_output_format cuda -i {filename}  -vcodec hevc_nvenc -vf fade=t=in:st=0:d={fadeinTime} -c:a copy {g.tmpdir}/fout_{g.uid}.mp4'
+    cmd = f'ffmpegC -loglevel warning -y -i {filename}  -vf fade=t=in:st=0:d={fadeinTime} -c:a copy {g.tmpdir}/fout_{g.uid}.mp4'
     prun(cmd,debug=debug)
-    cmd = f'ffmpeg -loglevel warning -y -i {g.tmpdir}/fout_{g.uid}.mp4 -vf fade=t=out:st={startFout}:d={fadeoutTime} -c:a copy {g.tmpdir}/fout2_{g.uid}.mp4'
+    # cmd = f'ffmpegC -loglevel warning -y -hwaccel_output_format cuda -i {g.tmpdir}/fout_{g.uid}.mp4  -vcodec hevc_nvenc -vf fade=t=out:st={startFout}:d={fadeoutTime} -c:a copy {g.tmpdir}/fout2_{g.uid}.mp4'
+    cmd = f'ffmpegC -loglevel warning -y -i {g.tmpdir}/fout_{g.uid}.mp4  -vf fade=t=out:st={startFout}:d={fadeoutTime} -c:a copy {g.tmpdir}/fout2_{g.uid}.mp4'
     prun(cmd, debug=debug)
-    cmd = f"mv {g.tmpdir}/fout2_{g.uid}.mp4 {filename}"
+    cmd = f"mv {g.tmpdir}/fout2_{g.uid}.mp4 /fstmp/faded.mp4"
     prun(cmd, debug=debug)
 
-    print(f"   ({procTime(timeStart)})")
+    print(f"TIME Fade:   ({procTime(timeStart)})")
     return filename
-def runMeta(filename,settingsFile, **kwargs):
+def runMeta(filename,settingsFile, **kwargs):#! NULL
     debug = tryit(kwargs,'debug',False)
 
-    # try:
-    #     debug = kwargs['debug']
-    # except:
-    #     debug = False
-
     timeStart = time.time()
-    print(Fore.GREEN + f"Embedding metadata" + Fore.RESET,end="",flush=True)
+    print(Fore.GREEN + f"Embedding metadata" + Fore.RESET,flush=True)
     cmd=f"{g.sdcdir}/metaconfig.py -v {filename} -a {settingsFile}"
     prun(cmd,debug=debug)
     timeProc = time.time() - timeStart
-    print(f"   ({timeProc})")
+    print(f"TIME Meta:   ({timeProc})")
 #[MATH Routines                                                      ]
+def cropdims(dims):
+    tmp = re.split('@|\:',dims)
+    width = int(tmp[0])
+    ratw = int(tmp[1])
+    rath = int(tmp[2])
+    ratio = rath/ratw
+    height = int(width * ratio)
+    return width,height
+
 def bezier_curve(control_points, number_of_curve_points):
     return [
         bezier_point(control_points, t)
@@ -414,10 +481,11 @@ def Diff_img(img0, img):
 #[Name wrangling                                                     ]
 def getID(filename):
     noext = filename.replace(".mp4","")
+    noext = noext.replace(".py","")
     parts = noext.split("/")
     return(parts[-1])
 def getFnames(locationpath):
-    print(locationpath)
+    # print(locationpath)
     basename = os.path.basename(locationpath)
     dirname = os.path.dirname(locationpath)
     if not dirname:
@@ -429,7 +497,7 @@ def getFnames(locationpath):
     # ^ order is important
     if os.path.isdir(locationpath):
         dirname = locationpath
-        basename = False
+        basename = ""
         fspec = "dir"
     elif os.path.isabs(locationpath):
         basename = os.path.basename(locationpath)
@@ -450,8 +518,9 @@ def getFilesize(file_name):
     bytes = file_stats.st_size
     mbytes = file_stats.st_size / (1024 * 1024)
     return(f"{mbytes:0.2f} MB")
-def errprint(str):
-    print(str, file=sys.stderr)
+def errprint(str,**kwargs):
+    end = tryit(kwargs,"end","\n")
+    print(str, file=sys.stderr, end=end)
 def procTime(t):
     secs = round(time.time() - t)
     mins = round(secs/600)/10
@@ -461,3 +530,41 @@ def procTime(t):
         return f"{min} mins"
 def splitnonalpha(s):
     return re.split('[^a-zA-Z0-9]', s)
+
+
+
+def cycle_in_range(number, amin, amax, invert=False):
+    """
+    Calculate a cyclic value within a specified range based on the given number.
+    Optionally, the result can be inverted.
+
+    Args:
+        number (int): The input number.
+        amin (int): The minimum value of the range.
+        amax (int): The maximum value of the range.
+        invert (bool, optional): Flag indicating whether to invert the result. Defaults to False.
+
+    Returns:
+        int: The calculated cyclic value rounded to the nearest integer.
+    """
+    mod_num = number % amax
+    mod_num2 = number % (amax * 2)
+
+    new_val1 = abs(mod_num2 - (mod_num * 2))
+
+    old_min = 0
+    old_max = amax
+    new_max = amax
+    new_min = amin
+
+    try:
+        new_value = ((new_val1 - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+    except ZeroDivisionError:
+        new_value = 0
+
+    if invert:
+        new_value = amax - new_value
+
+    return round(new_value)
+
+
