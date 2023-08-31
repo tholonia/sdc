@@ -3,7 +3,7 @@
 ### Video instructions for SD training
 
 https://www.youtube.com/watch?v=Ep4T8fyy2LE
-	11:24 setting up hypernet
+	Textual Inversion Tutorial, 11:24 setting up hypernet
 
 
 
