@@ -21,6 +21,21 @@ fi
 
 SAVE="TRUE"
 
+#    -Q, --sequence      select which processes to deployand in what order, default = 'SISCFM'
+
+#    -R, --cropto        crop to <wwidth>@<ratio>  Ex: 512@16:9
+#    -X, --xframes       add x interpolated frames
+#    -T, --tfilter       apply toss filter, values are 0.0 to 1.0, default = 0.5
+#    -V, --iversion      choose which version if interpolation.  Opensa are '1' or '2', default is 1
+#                        '-V 1' uses JPG format (default)
+#                        '-V 2' uses PNG format (and takes up massively more space)
+#    -K, --keep          Keep ever nth frame when tossing
+#    -Y, --fps           Extraction FPS
+
+#    -m, --usetmpdir     tmpdir to use
+#    -A, --AVI           use lossless AVI format
+#    -Z, --compress      convert AVI to MP4
+#    -W, --rotcolor      rotate colors
 
 makeauto.py -v $1                 -Q E${W}TIS -V 2 -K 2 -X 8 ${DEBUG} -A
 

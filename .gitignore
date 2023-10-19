@@ -24,3 +24,12 @@ outputs/
 # Model files
 configs/
 models/
+settings/
+safe/
+beta/
+batch/
+assets/
+archive/
+.directory
+.idea/
+DEADJOE
