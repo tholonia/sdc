@@ -1,0 +1,66 @@
+#!/bin/env python
+
+import os, getopt, sys
+from pprint import pprint
+from glob import glob
+
+sys.path.append("/home/jw/src/sdc/")
+import proclib as p
+
+
+def showhelp():
+    print("help")
+    rs = f"""
+    {__file__} -h,--help -mm--mode -d,--debug -c,--clean
+    
+    -h,--help       this  
+    -mm--mode       6x1, 6x3, 8x4, or any 2 ints whose product is less than 35
+    -d,--debug      default off
+    -c,--clean    default off
+        
+     
+"""
+    print(rs)
+    exit()
+
+
+clean = False
+debug = False
+X = 6
+Y = 1
+
+argv = sys.argv[1:]
+try:
+    opts, args = getopt.getopt(
+        argv,
+        "hm:dc",
+        ["help", "mode=", "debug", "clean"],
+    )
+except Exception as e:
+    print(str(e))
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        showhelp()
+    if opt in ("m", "--mode"):
+        mode = arg
+        X = arg.split("x")[0]
+        Y = arg.split("x")[1]
+        exit()
+    if opt in ("-d", "--debug"):
+        debug = True
+    if opt in ("-c", "--clean"):
+        clean = True
+
+if clean == False:
+    clean = input("Delete all MP4 files? (y/N)")
+    if clean.lower() == "y":
+        clean = True
+    else:
+        clean = False
+
+if clean == True:
+    for f in glob("*.mp4"): os.unlink(f)
+    p.prunlive(f"genlabels.py --skipconfirm --mode {X}x{Y} -o RUN", debug=debug)
+    p.prunlive("sh ./RUN", debug=debug)
+p.prunlive(f'mergevidX.py --filename "*.mp4" --grid {X}x{Y}', debug=debug)
