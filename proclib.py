@@ -66,8 +66,10 @@ def prun(cmd, **kwargs):
     scmd = cmd.split()
     for i in range(len(scmd)):
         scmd[i] = scmd[i].replace("~", " ")
+        scmd[i] = scmd[i].replace('"', "")
     if debug:
         print(Fore.YELLOW + cmd + Fore.RESET)
+        # pprint(scmd)
 
     # output = subprocess.Popen(
     #     scmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
@@ -80,6 +82,26 @@ def prun(cmd, **kwargs):
         print(Fore.RED + result.stderr + Fore.RESET)
     return result
 
+
+def prunlive(cmd, **kwargs):
+    debug = tryit(kwargs, "debug", False)
+    dryrun = tryit(kwargs, "dryrun", False)
+
+    if dryrun == "print":
+        print(cmd)
+        return
+
+    scmd = cmd.split()
+    for i in range(len(scmd)):
+        scmd[i] = scmd[i].replace("~", " ")
+        scmd[i] = scmd[i].replace('"', "")
+    if debug:
+        print(Fore.YELLOW + cmd + Fore.RESET)
+        # pprint(scmd)
+
+    process = subprocess.Popen(scmd, stdout=subprocess.PIPE)
+    for line in process.stdout:
+        sys.stdout.write(line.decode("utf-8"))
 
 def rot_left(l, n):
     return l[n:] + l[:n]
